@@ -1,6 +1,64 @@
-<apex:page standardController="Bond_Offering__c">
-<!-- Begin Default Content REMOVE THIS -->
-<h1>Congratulations</h1>
-This is your new Page
-<!-- End Default Content REMOVE THIS -->
+<apex:page standardController="Bond_Offering__c" extensions="BondOfferingPageControllerExtension">
+
+	<apex:sectionHeader title="Bond Offering" subtitle="{!subTitle}"/>
+	
+	<apex:form >
+		<apex:pageBlock id="mainBlock" title="Bond Offering Builder">
+			
+		  	<apex:pageBlockButtons location="top">
+				<apex:commandButton action="{!save}" value="Save"/>
+				<apex:commandButton action="{!cancel}" value="Cancel"/>			
+			</apex:pageBlockButtons>
+			
+			<apex:pageBlockSection id="offeringDetails" title="Bond Offering Details" collapsible="false">
+				<apex:inputField value="{!Bond_Offering__c.Name}" required="true"/>
+				<apex:inputField value="{!Bond_Offering__c.Client__c}" required="true"/>
+				<apex:inputField value="{!Bond_Offering__c.Sales_Rep__c}" required="true"/>
+				<apex:inputField value="{!Bond_Offering__c.Interest_Rate__c}" required="true"/>
+			</apex:pageBlockSection>
+			
+			<apex:pageBlockSection id="offeringStats" title="Bond Offering Progress" columns="1" collapsible="false">
+				<apex:outputText value="{!unitsSold}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Sold__c.Label}"/>
+				<apex:outputText value="{!unitsAvailable}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Remaining__c.Label}"/>
+				<apex:outputText value="{!unitsPending}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Pending__c.Label}"/>
+			</apex:pageBlockSection>
+			
+  		</apex:pageBlock>
+	</apex:form>
+	
+	<apex:form >
+		<apex:pageBlock id="bondBuyBlock">
+			<apex:pageBlockSection id="bondBuys" title="Bond Buys" columns="1" collapsible="false">
+			        <apex:selectList value="{!selectedFilter}" size="1" label="Investor Type Filter">
+	            		<apex:selectOptions value="{!investorTypeFilter}"/>
+	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="bondBuysPanel" event="onchange" />
+					</apex:selectList>
+				
+			        <apex:outputPanel id="bondBuysPanel" >
+				        <apex:pageBlockTable value="{!investorWraps}" var="investorWrap" id="bondBuyTable">
+							<apex:column width="5%">
+								<apex:facet name="header">Select</apex:facet>
+								<apex:inputCheckbox value="{!investorWrap.selected}"/>
+							</apex:column>
+							<apex:column width="15%">
+								<apex:facet name="header">Units</apex:facet>
+								<apex:inputText value="{!investorWrap.units}" required="true"/>
+							</apex:column>
+							<apex:column width="10%">
+								<apex:facet name="header">Status</apex:facet>
+								<apex:outputText value="{!investorWrap.status}"/>
+							</apex:column>
+							<apex:column width="40%">
+								<apex:facet name="header">Investor Name</apex:facet>
+								<apex:outputText value="{!investorWrap.investor.Name}"/>
+							</apex:column>
+							<apex:column width="30%">
+								<apex:facet name="header">Type</apex:facet>
+								<apex:outputText value="{!investorWrap.investor.Type__c}"/>
+							</apex:column>
+						</apex:pageBlockTable>	
+					</apex:outputPanel>	 
+			</apex:pageBlockSection>
+		</apex:pageBlock>
+	</apex:form>
 </apex:page>
