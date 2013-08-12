@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <content>BondOfferingPage</content>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Visualforce</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Bond offerings are bonds that CJ sells to investors on behalf of a client.  Each bond offering is for a total of $1,000,000 and is composed of 1,000 units of $1,000.</description>
+    <enableActivities>false</enableActivities>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>false</enableReports>
+    <fields>
+        <fullName>Client__c</fullName>
+        <description>The Client who is issuing the bond</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The Client who is issuing the bond</inlineHelpText>
+        <label>Client</label>
+        <referenceTo>Client__c</referenceTo>
+        <relationshipLabel>Bond Offerings</relationshipLabel>
+        <relationshipName>Bond_Offerings</relationshipName>
+        <relationshipOrder>0</relationshipOrder>
+        <reparentableMasterDetail>false</reparentableMasterDetail>
+        <type>MasterDetail</type>
+        <writeRequiresMasterRead>true</writeRequiresMasterRead>
+    </fields>
+    <fields>
+        <fullName>Interest_Rate__c</fullName>
+        <defaultValue>0.06</defaultValue>
+        <description>The interest rate for the bond offering</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The interest rate for the bond offering</inlineHelpText>
+        <label>Interest Rate</label>
+        <precision>4</precision>
+        <required>true</required>
+        <scale>2</scale>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Sales_Rep__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <description>The Sales Rep responsible for pitching the bond to potential investors</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The Sales Rep responsible for pitching the bond to potential investors</inlineHelpText>
+        <label>Sales Rep</label>
+        <referenceTo>User</referenceTo>
+        <relationshipName>Bond_Offerings</relationshipName>
+        <required>false</required>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Units_Pending__c</fullName>
+        <defaultValue>0</defaultValue>
+        <description>The total number of $1,000 bond units that have been purchased.  This number cannot exceed the 1,000 bond units that are available for each $1,000,000 bond offering (enforced by existing validation rule).</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The total number of $1,000 bond units that have been purchased.  This number cannot exceed the 1,000 bond units that are available for each $1,000,000 bond offering (enforced by existing validation rule).</inlineHelpText>
+        <label>Units Pending</label>
+        <precision>18</precision>
+        <required>true</required>
+        <scale>0</scale>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Units_Remaining__c</fullName>
+        <description>The number of $1,000 bond units that have not yet been sold</description>
+        <externalId>false</externalId>
+        <formula>1000 - Units_Sold__c</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <inlineHelpText>The number of $1,000 bond units that have not yet been sold</inlineHelpText>
+        <label>Units Remaining</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Units_Sold__c</fullName>
+        <defaultValue>0</defaultValue>
+        <description>The number of $1,000 bond units that are being pitched to investors but have not yet been purchased or rejected.  This number can’t exceed twice the number of bond units remaining (enforced by existing validation rule).</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The number of $1,000 bond units that are being pitched to investors but have not yet been purchased or rejected.  This number can’t exceed twice the number of bond units remaining (enforced by existing validation rule).</inlineHelpText>
+        <label>Units Sold</label>
+        <precision>18</precision>
+        <required>true</required>
+        <scale>0</scale>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <label>Bond Offering</label>
+    <listViews>
+        <fullName>All</fullName>
+        <filterScope>Everything</filterScope>
+        <label>All</label>
+    </listViews>
+    <nameField>
+        <label>Bond Offering Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Bond Offerings</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>ControlledByParent</sharingModel>
+    <validationRules>
+        <fullName>No_More_Units_Available</fullName>
+        <active>true</active>
+        <description>The total number of bond units purchased cannot exceed 1000</description>
+        <errorConditionFormula>Units_Sold__c &gt; 1000</errorConditionFormula>
+        <errorDisplayField>Units_Sold__c</errorDisplayField>
+        <errorMessage>The total number of bond units purchased cannot exceed 1000</errorMessage>
+    </validationRules>
+    <validationRules>
+        <fullName>Too_Many_Pending</fullName>
+        <active>true</active>
+        <description>The total number of pending bond buy units cannot exceed twice the number of units remaining.</description>
+        <errorConditionFormula>Units_Pending__c &gt; 2 * Units_Remaining__c</errorConditionFormula>
+        <errorDisplayField>Units_Pending__c</errorDisplayField>
+        <errorMessage>The total number of pending bond buy units cannot exceed twice the number of units remaining.</errorMessage>
+    </validationRules>
+</CustomObject>

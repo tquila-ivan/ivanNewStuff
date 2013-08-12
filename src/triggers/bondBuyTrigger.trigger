@@ -4,10 +4,9 @@ after update, before delete, before insert, before update) {
 	//Create the Handler instance passing the proper parameters
 	bondBuyTriggerHandler handler = new bondBuyTriggerHandler(Trigger.isExecuting, Trigger.size);
 
-	if (Trigger.isAfter) {
-		
+	if (Trigger.isAfter) {	
 		if (Trigger.isInsert) {
-			handler.bondBuyAfterInsert(Trigger.new);
+			handler.bondBuyAfterInsertUndelete(Trigger.new);
 		}
 		
 		if (Trigger.isUpdate) {
@@ -15,12 +14,11 @@ after update, before delete, before insert, before update) {
 		}
 		
 		if (Trigger.isDelete) {
-			
+			handler.bondBuyAfterDelete(Trigger.old);
 		}
 		
 		if (Trigger.isUnDelete) {
-			
+			handler.bondBuyAfterInsertUndelete(Trigger.new);
 		}
-		
 	}
 }

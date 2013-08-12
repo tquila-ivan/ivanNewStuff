@@ -16,9 +16,9 @@ public with sharing class bondBuyTriggerHandler {
     }
     
     //AFTER INSERT
-    public void bondBuyAfterInsert(List<Bond_Buy__c> bondBuyListIn) {
+    public void bondBuyAfterInsertUndelete(List<Bond_Buy__c> bondBuyListIn) {
     	
-    	bondBuyListFilter(bondBuyListIn, null);
+    	bondBuyListFilter(bondBuyListIn, null, false);
     	
     	Bond_Offering__c bondOffering = new Bond_Offering__c();
     	Map<Id, Bond_Offering__c> bondOfferingMap = new Map<Id, Bond_Offering__c>();
@@ -63,7 +63,7 @@ public with sharing class bondBuyTriggerHandler {
     
     public void bondBuyAfterUpdate(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap) {
     	
-    	bondBuyListFilter(bondBuyListIn, bondBuyOldMap);
+    	bondBuyListFilter(bondBuyListIn, bondBuyOldMap, false);
     	
     	Bond_Offering__c bondOffering = new Bond_Offering__c();
     	Investor__c investor = new Investor__c();
@@ -89,8 +89,8 @@ public with sharing class bondBuyTriggerHandler {
 			
 			bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
 			investor = new Investor__c(Id = bondBuy.Investor__c);
-			oldInvestor = oldInvestorMap.get(bondBuy.Id);
-			oldOffering = oldOfferingMap.get(bondBuy.Id);
+			oldInvestor = oldInvestorMap.get(oldBondBuy.Investor__c);
+			oldOffering = oldOfferingMap.get(oldBondBuy.Bond_Offering__c);
 			
 			if (oldInvestor != null) {
 				if (investorMap.containsKey(oldInvestor.Id))
@@ -241,11 +241,55 @@ public with sharing class bondBuyTriggerHandler {
     	update investorMap.values();
     }
     
-    private void bondBuyListFilter(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap) {
+    public void bondBuyAfterDelete(List<Bond_Buy__c> bondBuyListIn) {
+    	bondBuyListFilter(bondBuyListIn, null, true);
+    	
+    	Bond_Offering__c bondOffering = new Bond_Offering__c();
+    	Map<Id, Bond_Offering__c> bondOfferingMap = new Map<Id, Bond_Offering__c>();
+    	Investor__c investor = new Investor__c();
+    	Map<Id, Investor__c> investorMap = new Map<Id, Investor__c>();
+    	
+    	for (Bond_Buy__c bondBuy : bondBuyList) {
+    		
+			bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
+    		investor = new Investor__c(Id = bondBuy.Investor__c);
+    		
+    		if (investorMap.containsKey(investor.Id))
+				investor = investorMap.get(investor.Id);
+			else {
+				investor.Bonds_Pitched__c = oldInvestorMap.get(bondBuy.Investor__c).Bonds_Pitched__c;
+				investor.Bonds_Purchased__c = oldInvestorMap.get(bondBuy.Investor__c).Bonds_Purchased__c;
+			}
+			
+			if (bondOfferingMap.containsKey(bondOffering.Id))
+				bondOffering = bondOfferingMap.get(bondOffering.Id);
+			else {
+				bondOffering.Units_Pending__c = oldOfferingMap.get(bondBuy.Bond_Offering__c).Units_Pending__c;
+				bondOffering.Units_Sold__c = oldOfferingMap.get(bondBuy.Bond_Offering__c).Units_Sold__c;
+			}
+    		
+    		if (bondBuy.Status__c == 'Pending') 
+    			bondOffering.Units_Pending__c -= bondBuy.Units__c;
+    		if (bondBuy.Status__c == 'Purchased') {
+    			bondOffering.Units_Sold__c -=  bondBuy.Units__c;
+    			investor.Bonds_Purchased__c --;
+    		}
+    		
+    		investor.Bonds_Pitched__c --;
+    		
+    		bondOfferingMap.put(bondOffering.Id, bondOffering);	
+    		investorMap.put(investor.Id, investor);
+    	}
+    	
+    	update bondOfferingMap.values();
+    	update investorMap.values();
+    }
+    
+    private void bondBuyListFilter(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap, Boolean isDelete) {
     	Set<Id> bondBuySet = new Set<Id>();
     	
-    	Map<Id, Id> oldOfferingIdMap = new Map<Id, Id>();
-    	Map<Id, Id> oldInvestorIdMap = new Map<Id, Id>();
+    	Set<Id> oldOfferingIdSet = new Set<Id>();
+    	Set<Id> oldInvestorIdSet = new Set<Id>();
     	
     	Boolean getOld = bondBuyOldMap != null;
     	Bond_Buy__c oldBondBuy = new Bond_Buy__c();
@@ -255,26 +299,35 @@ public with sharing class bondBuyTriggerHandler {
     			if (getOld) {
     				oldBondBuy = bondBuyOldMap.get(bondBuy.Id);
     				if (bondBuy.Bond_Offering__c != oldBondBuy.Bond_Offering__c)
-    					oldOfferingIdMap.put(oldBondBuy.Bond_Offering__c, bondBuy.Id);
+    					oldOfferingIdSet.add(oldBondBuy.Bond_Offering__c);
     				if (bondBuy.Investor__c != oldBondBuy.Investor__c)
-    					oldInvestorIdMap.put(oldBondBuy.Investor__c, bondBuy.Id);
+    					oldInvestorIdSet.add(oldBondBuy.Investor__c);
+    			}
+    			if (isDelete) {
+    				oldOfferingIdSet.add(bondBuy.Bond_Offering__c);
+    				oldInvestorIdSet.add(bondBuy.Investor__c);
+    				bondBuyList.add(bondBuy);
     			}
     			bondBuySet.add(bondBuy.Id);
     		}
     	}
-    	bondBuyList = [Select Bond_Offering__c, Investor__c, Status__c, Units__c, Bond_Offering__r.Units_Pending__c, Bond_Offering__r.Units_Sold__c, Investor__r.Bonds_Pitched__c, Investor__r.Bonds_Purchased__c from Bond_Buy__c where Id in :bondBuySet];
     	
-    	if (getOld) {
-    		if (!oldOfferingIdMap.isEmpty()) {
-	    		List<Bond_Offering__c> oldOfferingList = [Select Units_Pending__c, Units_Sold__c from Bond_Offering__c where Id in :oldOfferingIdMap.keySet()];
+		if (!isDelete)
+    		bondBuyList = [Select Bond_Offering__c, Investor__c, Status__c, Units__c, Bond_Offering__r.Units_Pending__c, Bond_Offering__r.Units_Sold__c, Investor__r.Bonds_Pitched__c, Investor__r.Bonds_Purchased__c from Bond_Buy__c where Id in :bondBuySet];
+    	
+    	if (getOld || isDelete) {
+    		if (!oldOfferingIdSet.isEmpty()) {
+    			System.debug('Entra off ' + oldOfferingIdSet);
+	    		List<Bond_Offering__c> oldOfferingList = [Select Units_Pending__c, Units_Sold__c from Bond_Offering__c where Id in :oldOfferingIdSet];
 	    		for (Bond_Offering__c offer : oldOfferingList) {
-	    			oldOfferingMap.put(oldOfferingIdMap.get(offer.Id), offer);
+	    			oldOfferingMap.put(offer.Id, offer);
 	    		}
     		}
-	    	if (!oldInvestorIdMap.isEmpty()) {
-	    		List<Investor__c> oldInvestorList = [Select Bonds_Pitched__c, Bonds_Purchased__c from Investor__c where Id in :oldInvestorIdMap.keySet()];
+	    	if (!oldInvestorIdSet.isEmpty()) {
+	    		System.debug('Entra inv ' + oldInvestorIdSet);
+	    		List<Investor__c> oldInvestorList = [Select Bonds_Pitched__c, Bonds_Purchased__c from Investor__c where Id in :oldInvestorIdSet];
 	    		for (Investor__c investor : oldInvestorList) {
-	    			oldInvestorMap.put(oldInvestorIdMap.get(investor.Id), investor);
+	    			oldInvestorMap.put(investor.Id, investor);
 	    		}
 	    	}
     	}
