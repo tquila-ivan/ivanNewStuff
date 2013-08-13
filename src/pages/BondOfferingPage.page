@@ -2,7 +2,7 @@
 
 	<apex:sectionHeader title="Bond Offering" subtitle="{!subTitle}"/>
 	
-	<apex:form >
+	<apex:form id="mainForm">
 		<apex:pageBlock id="mainBlock" title="Bond Offering Builder">
 			
 		  	<apex:pageBlockButtons location="top">
@@ -23,42 +23,40 @@
 				<apex:outputText value="{!unitsPending}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Pending__c.Label}"/>
 			</apex:pageBlockSection>
 			
-  		</apex:pageBlock>
-	</apex:form>
-	
-	<apex:form >
-		<apex:pageBlock id="bondBuyBlock">
-			<apex:pageBlockSection id="bondBuys" title="Bond Buys" columns="1" collapsible="false">
+			<apex:actionRegion >
+				<apex:pageBlockSection id="bondBuys" title="Bond Buys" columns="1" collapsible="false">
 			        <apex:selectList value="{!selectedFilter}" size="1" label="Investor Type Filter">
 	            		<apex:selectOptions value="{!investorTypeFilter}"/>
-	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="bondBuysPanel" event="onchange" />
+	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="bondBuysPanel, refreshBondBuyStatus" event="onchange" status="refreshBondBuyStatus"/>
 					</apex:selectList>
-				
+					
+					<apex:actionStatus startText=" (refreshing...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s)." id="refreshBondBuyStatus" />
 			        <apex:outputPanel id="bondBuysPanel" >
-				        <apex:pageBlockTable value="{!investorWraps}" var="investorWrap" id="bondBuyTable">
+				        <apex:pageBlockTable value="{!bondBuyWrapsToDisplay}" var="bondBuyWrap" id="bondBuyTable">
 							<apex:column width="5%">
 								<apex:facet name="header">Select</apex:facet>
-								<apex:inputCheckbox value="{!investorWrap.selected}"/>
+								<apex:inputCheckbox value="{!bondBuyWrap.selected}"/>
 							</apex:column>
 							<apex:column width="15%">
 								<apex:facet name="header">Units</apex:facet>
-								<apex:inputText value="{!investorWrap.units}" required="true"/>
+								<apex:inputText value="{!bondBuyWrap.units}" required="true"/>
 							</apex:column>
 							<apex:column width="10%">
 								<apex:facet name="header">Status</apex:facet>
-								<apex:outputText value="{!investorWrap.status}"/>
+								<apex:outputText value="{!bondBuyWrap.bondBuy.Status__c}"/>
 							</apex:column>
 							<apex:column width="40%">
 								<apex:facet name="header">Investor Name</apex:facet>
-								<apex:outputText value="{!investorWrap.investor.Name}"/>
+								<apex:outputText value="{!bondBuyWrap.bondBuy.Investor__r.Name}"/>
 							</apex:column>
 							<apex:column width="30%">
 								<apex:facet name="header">Type</apex:facet>
-								<apex:outputText value="{!investorWrap.investor.Type__c}"/>
+								<apex:outputText value="{!bondBuyWrap.bondBuy.Investor__r.Type__c}"/>
 							</apex:column>
 						</apex:pageBlockTable>	
-					</apex:outputPanel>	 
-			</apex:pageBlockSection>
+					</apex:outputPanel>	
+				</apex:pageBlockSection>
+			</apex:actionRegion> 
 		</apex:pageBlock>
 	</apex:form>
 </apex:page>

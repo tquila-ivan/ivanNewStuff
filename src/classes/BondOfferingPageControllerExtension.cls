@@ -35,11 +35,12 @@ public with sharing class BondOfferingPageControllerExtension {
 		set;
 	}
 	public String selectedFilter {get;set;}
+	public List<bondBuySelectionWrapper> bondBuyWrapsToDisplay {get;set;}
+	public List<bondBuySelectionWrapper> bondBuyWrapsToSave {get;set;}
+	private Map<String,List<bondBuySelectionWrapper>> wrappersByTypeMap = new Map<String,List<bondBuySelectionWrapper>>();
+	public Integer pageNumber {get;set;}
+	public Integer pageSize = 5;
 	
-	public List<investorSelectionWrapper> investorWraps {
-		get;
-		set;
-	}
 	
 	public String filterValue {get;set;}
 	
@@ -51,8 +52,19 @@ public with sharing class BondOfferingPageControllerExtension {
         	unitsPending = Integer.valueOf(bondOffering.Units_Pending__c);
         }
         
-        investorWraps = getInvestorSelectionWrapperList(selectedFilter);
+        bondBuyWrapsToSave = getBondBuySelectionWrapperList();        
+        pageNumber = 0;
+        getbondBuyWrapsToDisplay();
     }
+	
+	private void getbondBuyWrapsToDisplay(){
+		bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
+		for (Integer i = pageNumber*pagesize; i < pageSize; i++) {
+        	if (i >= bondBuyWrapsToSave.size())
+        		break;
+        	bondBuyWrapsToDisplay.add(bondBuyWrapsToSave.get(i));
+        }
+	}
 	
 	public List<SelectOption> getInvestorTypeFilter()
 	{
@@ -68,37 +80,88 @@ public with sharing class BondOfferingPageControllerExtension {
 	}
 	
 	public PageReference refreshBondBuys() {
-		//System.debug('filter seleccion ' + countries);
-		investorWraps = getInvestorSelectionWrapperList(selectedFilter);
+		if (selectedFilter != '--Any Type--')
+			bondBuyWrapsToDisplay = wrappersByTypeMap.get(selectedFilter);
+		else
+			getbondBuyWrapsToDisplay();
 		return null;
 	}
 	
-	public List<investorSelectionWrapper> getInvestorSelectionWrapperList(String typeFilter) {
-		List<investorSelectionWrapper> investorWrappers = new List<investorSelectionWrapper>();
-		String soqlQuery = 'Select Name, Type__c from Investor__c';
-		if (typeFilter != null && typeFilter != '' && typeFilter != '--Any Type--')
-			soqlQuery += ' where Type__c = \'' + typeFilter + '\' order by Name Asc';
-		
-		
-		List<Investor__c> tempInvestors = Database.query(soqlQuery);
-		
-		for (Investor__c tempInvestor : tempInvestors) {
-			investorWrappers.add(new investorSelectionWrapper(tempInvestor, false, 0, 'New'));
+	public List<bondBuySelectionWrapper> getBondBuySelectionWrapperList() {
+		List<bondBuySelectionWrapper> bondBuyWrappers = new List<bondBuySelectionWrapper>();
+		List<Investor__c> tempInvestors = new List<Investor__c>();
+		Boolean newOffering = bondOffering.Id == null;
+		Map<Id, Bond_Buy__c> tempBondBuyMap = new Map<Id, Bond_Buy__c>();
+		String soqlQueryBondBuys = '';
+		String investorType = 'Null';
+		if (!newOffering) {
+			soqlQueryBondBuys = 'Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buy__c where Bond_Offering__c = \'' + bondOffering.Id + '\'';
+			tempBondBuyMap = new Map<Id, Bond_Buy__c>((List<Bond_Buy__c>)Database.query(soqlQueryBondBuys));
 		}
-		return investorWrappers;
+		String soqlQueryInvestors = 'Select Name, Type__c from Investor__c ';
+		
+		if (!tempBondBuyMap.isEmpty()) {
+			Set<Id> bondBuyInvestors = new Set<Id>();
+			for (Bond_Buy__c tempBondBuy : tempBondBuyMap.values()) {
+				//bondBuyWrappers.add(new bondBuySelectionWrapper (tempBondBuy, false));
+				
+				if (tempBondBuy.Investor__c != null) {
+					bondBuyInvestors.add(tempBondBuy.Investor__c);
+					investorType = tempBondBuy.Investor__r.Type__c;
+				}
+				
+				if (!wrappersByTypeMap.containsKey(investorType))
+					wrappersByTypeMap.put(investorType, new List<bondBuySelectionWrapper>());
+				wrappersByTypeMap.get(investorType).add(new bondBuySelectionWrapper(tempBondBuy, false));
+			}
+			if (soqlQueryInvestors.contains('where'))
+				soqlQueryInvestors += ' and Id not in :bondBuyInvestors';
+			else
+				soqlQueryInvestors += ' where Id not in :bondBuyInvestors';
+		}
+		
+		tempInvestors = Database.query(soqlQueryInvestors);
+		
+		for (Investor__c tempInvestor: tempInvestors) {
+			investorType = tempInvestor.Type__c;
+			if (!wrappersByTypeMap.containsKey(investorType))
+					wrappersByTypeMap.put(investorType, new List<bondBuySelectionWrapper>());
+			wrappersByTypeMap.get(investorType).add(new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = 0, Investor__r = tempInvestor, Bond_Offering__c = bondOffering.Id), false));
+		}
+		
+		bondBuyWrappers = new List<bondBuySelectionWrapper>();
+		
+		for (String invType : wrappersByTypeMap.keyset()) {	
+			bondBuyWrappers.addAll(wrappersByTypeMap.get(invType));
+		}
+		return bondBuyWrappers;
 	}
 	
-	public class investorSelectionWrapper {
-		public Investor__c investor {get;set;}
+	public class bondBuySelectionWrapper implements Comparable{
+		public Bond_Buy__c bondBuy {get;set;}
 		public Boolean selected {get;set;}
-		public Integer units {get;set;}
 		public String status {get;set;}
+		public Double units {
+			get {
+				if (units == null)
+					units = bondBuy.Units__c;
+				return units;
+			}
+			set;
+		}
 		
-		public investorSelectionWrapper (Investor__c investorIn, Boolean selectedIn, Integer unitsIn, String statusIn) {
-			investor = investorIn;
+		public bondBuySelectionWrapper (Bond_Buy__c bondBuyIn, Boolean selectedIn) {
+			bondBuy = bondBuyIn;
 			selected = selectedIn;
-			units = unitsIn;
-			status = statusIn;
+		}
+		
+		public Integer compareTo(Object compareTo) {
+			bondBuySelectionWrapper wrapperToCompare = (bondBuySelectionWrapper) compareTo;
+			if (bondBuy.Investor__r.Name == wrapperToCompare.bondBuy.Investor__r.Name)
+				return 0;
+			if (bondBuy.Investor__r.Name > wrapperToCompare.bondBuy.Investor__r.Name)
+				return 1;
+			return -1;
 		}
 	}
 }
