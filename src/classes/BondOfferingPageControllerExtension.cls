@@ -38,9 +38,16 @@ public with sharing class BondOfferingPageControllerExtension {
 	public List<bondBuySelectionWrapper> bondBuyWrapsToDisplay {get;set;}
 	public List<bondBuySelectionWrapper> bondBuyWrapsToSave {get;set;}
 	private Map<String,List<bondBuySelectionWrapper>> wrappersByTypeMap = new Map<String,List<bondBuySelectionWrapper>>();
+	private Map<String,bondBuySelectionWrapper> wrappersShown = new Map<String,bondBuySelectionWrapper>();
 	public Integer pageNumber {get;set;}
 	public Integer pageSize = 5;
-	
+	private Double investorCount;
+	public Integer totalPages {
+		get {
+			return Integer.valueOf(Math.ceil(investorCount / pageSize));
+		}
+		private set;
+	}
 	
 	public String filterValue {get;set;}
 	
@@ -52,8 +59,8 @@ public with sharing class BondOfferingPageControllerExtension {
         	unitsPending = Integer.valueOf(bondOffering.Units_Pending__c);
         }
         
-        bondBuyWrapsToSave = getBondBuySelectionWrapperList();        
         pageNumber = 0;
+        bondBuyWrapsToSave = getBondBuySelectionWrapperList();
         getbondBuyWrapsToDisplay();
     }
 	
@@ -80,60 +87,75 @@ public with sharing class BondOfferingPageControllerExtension {
 	}
 	
 	public PageReference refreshBondBuys() {
-		if (selectedFilter != '--Any Type--')
-			bondBuyWrapsToDisplay = wrappersByTypeMap.get(selectedFilter);
-		else
-			getbondBuyWrapsToDisplay();
+		pageNumber = 0;
+		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+		return null;
+	}
+	
+	public PageReference previousPage() {
+		pageNumber --;
+		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+		return null;
+	}
+	
+	public PageReference nextPage() {
+		pageNumber ++;
+		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+		return null;
+	}
+	
+	public PageReference lastPage() {
+		pageNumber = totalPages - 1;
+		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+		return null;
+	}
+	
+	public PageReference firstPage() {
+		pageNumber = 0;
+		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
 		return null;
 	}
 	
 	public List<bondBuySelectionWrapper> getBondBuySelectionWrapperList() {
 		List<bondBuySelectionWrapper> bondBuyWrappers = new List<bondBuySelectionWrapper>();
-		List<Investor__c> tempInvestors = new List<Investor__c>();
+		Map<Id, bondBuySelectionWrapper> bondBuyWrappersMap = new Map<Id, bondBuySelectionWrapper>();
+		Map<Id, Investor__c> tempInvestors = new Map<Id, Investor__c>();
 		Boolean newOffering = bondOffering.Id == null;
-		Map<Id, Bond_Buy__c> tempBondBuyMap = new Map<Id, Bond_Buy__c>();
-		String soqlQueryBondBuys = '';
-		String investorType = 'Null';
-		if (!newOffering) {
-			soqlQueryBondBuys = 'Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buy__c where Bond_Offering__c = \'' + bondOffering.Id + '\'';
-			tempBondBuyMap = new Map<Id, Bond_Buy__c>((List<Bond_Buy__c>)Database.query(soqlQueryBondBuys));
-		}
+		List<Bond_Buy__c> tempBondBuys = new List<Bond_Buy__c>();
 		String soqlQueryInvestors = 'Select Name, Type__c from Investor__c ';
 		
-		if (!tempBondBuyMap.isEmpty()) {
-			Set<Id> bondBuyInvestors = new Set<Id>();
-			for (Bond_Buy__c tempBondBuy : tempBondBuyMap.values()) {
-				//bondBuyWrappers.add(new bondBuySelectionWrapper (tempBondBuy, false));
+		if (selectedFilter != null && selectedFilter != '' && selectedFilter != '--Any Type--') {
+			soqlQueryInvestors += ' where Type__c = :selectedFilter ';
+			investorCount = [Select count() from Investor__c where Type__c = :selectedFilter];
+		}
+		else
+			investorCount = [Select count() from Investor__c];
+		Integer offSet = pageNumber*pagesize;
+		soqlQueryInvestors += ' Order by Name Asc LIMIT :pageSize OFFSET :offSet';
+		try {
+			tempInvestors = new Map<Id, Investor__c>((List<Investor__c>)Database.query(soqlQueryInvestors));
+			System.debug(tempInvestors);
+			if (!newOffering) {
+				tempBondBuys = [Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buy__c where Bond_Offering__c = :bondOffering.Id and Investor__c in :tempInvestors.keySet()];
 				
-				if (tempBondBuy.Investor__c != null) {
-					bondBuyInvestors.add(tempBondBuy.Investor__c);
-					investorType = tempBondBuy.Investor__r.Type__c;
+				for (Bond_Buy__c tempBondBuy : tempBondBuys) {
+					if (!wrappersShown.containsKey(tempBondBuy.Investor__c))
+						wrappersShown.put(tempBondBuy.Investor__c, new bondBuySelectionWrapper(tempBondBuy, false));
+					bondBuyWrappersMap.put(tempBondBuy.Investor__c,wrappersShown.get(tempBondBuy.Investor__c));
 				}
-				
-				if (!wrappersByTypeMap.containsKey(investorType))
-					wrappersByTypeMap.put(investorType, new List<bondBuySelectionWrapper>());
-				wrappersByTypeMap.get(investorType).add(new bondBuySelectionWrapper(tempBondBuy, false));
 			}
-			if (soqlQueryInvestors.contains('where'))
-				soqlQueryInvestors += ' and Id not in :bondBuyInvestors';
-			else
-				soqlQueryInvestors += ' where Id not in :bondBuyInvestors';
+			
+			for (Investor__c tempInvestor : tempInvestors.values()) {
+				if (!wrappersShown.containsKey(tempInvestor.Id))
+					wrappersShown.put(tempInvestor.Id,new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = 0, Investor__r = tempInvestor), false));
+				bondBuyWrappersMap.put(tempInvestor.Id, wrappersShown.get(tempInvestor.Id));
+			}
 		}
-		
-		tempInvestors = Database.query(soqlQueryInvestors);
-		
-		for (Investor__c tempInvestor: tempInvestors) {
-			investorType = tempInvestor.Type__c;
-			if (!wrappersByTypeMap.containsKey(investorType))
-					wrappersByTypeMap.put(investorType, new List<bondBuySelectionWrapper>());
-			wrappersByTypeMap.get(investorType).add(new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = 0, Investor__r = tempInvestor, Bond_Offering__c = bondOffering.Id), false));
+		catch (Exception ex) {
+			System.debug(ex.getMessage() + 'messss ' + ex.getStackTraceString());
 		}
-		
-		bondBuyWrappers = new List<bondBuySelectionWrapper>();
-		
-		for (String invType : wrappersByTypeMap.keyset()) {	
-			bondBuyWrappers.addAll(wrappersByTypeMap.get(invType));
-		}
+		bondBuyWrappers = bondBuyWrappersMap.values();
+		bondBuyWrappers.sort();
 		return bondBuyWrappers;
 	}
 	

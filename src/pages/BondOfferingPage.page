@@ -27,7 +27,7 @@
 				<apex:pageBlockSection id="bondBuys" title="Bond Buys" columns="1" collapsible="false">
 			        <apex:selectList value="{!selectedFilter}" size="1" label="Investor Type Filter">
 	            		<apex:selectOptions value="{!investorTypeFilter}"/>
-	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="bondBuysPanel, refreshBondBuyStatus" event="onchange" status="refreshBondBuyStatus"/>
+	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" event="onchange" status="refreshBondBuyStatus"/>
 					</apex:selectList>
 					
 					<apex:actionStatus startText=" (refreshing...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s)." id="refreshBondBuyStatus" />
@@ -54,7 +54,14 @@
 								<apex:outputText value="{!bondBuyWrap.bondBuy.Investor__r.Type__c}"/>
 							</apex:column>
 						</apex:pageBlockTable>	
-					</apex:outputPanel>	
+					</apex:outputPanel>
+					<apex:outputPanel id="pagination">
+						<apex:commandButton action="{!firstPage}" value="|< First" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
+						<apex:commandButton action="{!previousPage}" value="< Previous" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
+						<apex:outputText value="Page {!pageNumber+1} of {!totalPages}"/>
+						<apex:commandButton action="{!nextPage}" value="Next >" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+						<apex:commandButton action="{!lastPage}" value="Last >|" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+					</apex:outputPanel> 	
 				</apex:pageBlockSection>
 			</apex:actionRegion> 
 		</apex:pageBlock>
