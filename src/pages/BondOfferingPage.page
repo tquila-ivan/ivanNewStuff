@@ -6,8 +6,20 @@
 		<apex:pageBlock id="mainBlock" title="Bond Offering Builder">
 			
 		  	<apex:pageBlockButtons location="top">
-				<apex:commandButton action="{!save}" value="Save"/>
-				<apex:commandButton action="{!cancel}" value="Cancel"/>			
+		  		<apex:actionStatus id="saveStatus">
+					<apex:facet name="stop">
+						<apex:outputPanel >
+							<apex:commandButton action="{!save}" value="Save" rerender="saveStatus, mainBlock" status="saveStatus"/>
+							<apex:commandButton action="{!cancel}" value="Cancel" rerender="saveStatus, mainBlock" status="saveStatus"/>	
+						</apex:outputPanel>
+					</apex:facet>
+					<apex:facet name="start">
+						<apex:outputPanel >
+							<apex:commandButton action="{!save}" value="Save" disabled="true" status="saveStatus"/>
+							<apex:commandButton action="{!cancel}" value="Cancel" disabled="true" status="saveStatus"/>	
+						</apex:outputPanel>
+					</apex:facet>
+				</apex:actionStatus>		
 			</apex:pageBlockButtons>
 			
 			<apex:pageBlockSection id="offeringDetails" title="Bond Offering Details" collapsible="false">
@@ -29,9 +41,9 @@
 	            		<apex:selectOptions value="{!investorTypeFilter}"/>
 	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" event="onchange" status="refreshBondBuyStatus"/>
 					</apex:selectList>
-					<apex:pageMessages id="mess"/>
-					<apex:actionStatus startText=" (refreshing...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s)." id="refreshBondBuyStatus" />
+					<apex:actionStatus startText=" (filtering...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s)." id="refreshBondBuyStatus" />
 			        <apex:outputPanel id="bondBuysPanel" >
+			        <apex:pageMessages id="mess" rendered="{!errorShown}"/>
 				        <apex:pageBlockTable value="{!bondBuyWrapsToDisplay}" var="bondBuyWrap" id="bondBuyTable">
 							<apex:column width="5%">
 								<apex:facet name="header">Select</apex:facet>
@@ -60,12 +72,33 @@
 							</apex:column>
 						</apex:pageBlockTable>	
 					</apex:outputPanel>
+					
+					
 					<apex:outputPanel id="pagination">
-						<apex:commandButton action="{!refreshBondBuys}" value="|< First" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
-						<apex:commandButton action="{!previousPage}" value="< Previous" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
-						<apex:outputText value="Page {!pageNumber+1} of {!totalPages}"/>
-						<apex:commandButton action="{!nextPage}" value="Next >" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
-						<apex:commandButton action="{!lastPage}" value="Last >|" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+						<apex:actionStatus id="paginationStatus">
+							<apex:facet name="stop">
+								<apex:outputPanel >
+								<center>
+									<apex:commandButton action="{!refreshBondBuys}" value="|< First" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 0}"/>
+									<apex:commandButton action="{!previousPage}" value="< Previous" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 0}"/>
+									<apex:outputText value="Page {!pageNumber+1} of {!totalPages}"/>
+									<apex:commandButton action="{!nextPage}" value="Next >" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+									<apex:commandButton action="{!lastPage}" value="Last >|" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+								</center>
+								</apex:outputPanel>
+							</apex:facet>
+							<apex:facet name="start">
+								<apex:outputPanel >
+									<center>	
+										<apex:commandButton action="{!refreshBondBuys}" value="Working..." status="paginationStatus" disabled="true"/>
+										<apex:commandButton action="{!previousPage}" value="Working..." status="paginationStatus" disabled="true"/>
+										<apex:outputText value="Working..."/>
+										<apex:commandButton action="{!nextPage}" value="Working..." status="paginationStatus" disabled="true"/>
+										<apex:commandButton action="{!lastPage}" value="Working..." status="paginationStatus" disabled="true"/>
+									</center>
+								</apex:outputPanel>
+							</apex:facet>
+						</apex:actionStatus>
 					</apex:outputPanel> 	
 				</apex:pageBlockSection>
 			</apex:actionRegion> 

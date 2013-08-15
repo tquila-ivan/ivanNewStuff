@@ -74,7 +74,6 @@ public with sharing class BondOfferingPageControllerExtension {
         
         pageNumber = 0;
         bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
-        //getbondBuyWrapsToDisplay();
     }
 	
 	private void getbondBuyWrapsToDisplay(){
@@ -99,16 +98,16 @@ public with sharing class BondOfferingPageControllerExtension {
 		return options;
 	}
 	
-	public Boolean checkUnits () {
-		Boolean errorFound = false;
+	public Boolean allUnitsValid () {
+		Boolean allValid = true;
 		for (bondBuySelectionWrapper wrap : bondBuyWrapsToDisplay) {
 			if (String.isBlank(wrap.units) || !wrap.units.isNumeric()) {
-				errorFound = true;
+				allValid = false;
 				break;
 			}
 		}
 		
-		return errorfound;
+		return allValid;
 	}
 	
 	public PageReference refreshBondBuys() {
@@ -128,16 +127,16 @@ public with sharing class BondOfferingPageControllerExtension {
 	}
 	
 	private PageReference reloadList (Integer pageNumberIn) {
-		if (checkUnits()) {
+		if (allUnitsValid()) {
+			pageNumber = pageNumberIn;
+			bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+			errorShown = false;
+		}
+		else {
 			ApexPages.Message myMsg = new ApexPages.Message(ApexPages.Severity.FATAL, 'Error found: Make sure you have entered a valid numbered in the units field for all investors');
 	        ApexPages.addMessage(myMsg);
 	        errorShown = true;
 	        selectedFilter = previousSelectedFilter;
-		}
-		else {
-			pageNumber = pageNumberIn;
-			bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
-			errorShown = false;
 		}
 		return null;
 	}
@@ -150,7 +149,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		List<Bond_Buy__c> tempBondBuys = new List<Bond_Buy__c>();
 		String soqlQueryInvestors = 'Select Name, Type__c, Default_Bond_Units__c from Investor__c ';
 		
-		if (selectedFilter != null && selectedFilter != '' && selectedFilter != '--Any Type--') {
+		if (!String.isBlank(selectedFilter) && selectedFilter != '--Any Type--') {
 			soqlQueryInvestors += ' where Type__c = :selectedFilter ';
 			investorCount = [Select count() from Investor__c where Type__c = :selectedFilter];
 		}
@@ -186,7 +185,7 @@ public with sharing class BondOfferingPageControllerExtension {
 	}
 	
 	public PageReference save() {
-		if (checkUnits()) {
+		if (!allUnitsValid()) {
 			ApexPages.Message myMsg = new ApexPages.Message(ApexPages.Severity.FATAL, 'Error found: Make sure you have entered a valid numbered in the units field for all investors');
 	        ApexPages.addMessage(myMsg);
 	        errorShown = true;
