@@ -17,8 +17,13 @@
         <name>ApexTrigger</name>
     </types>
     <types>
-        <members>Bond_Offering__c</members>
+        <members>*</members>
         <name>CustomObject</name>
+    </types>
+    <types>
+        <members>CJ Account Executive</members>
+        <members>CJ Sales Rep</members>
+        <name>Profile</name>
     </types>
     <types>
         <members>*</members>

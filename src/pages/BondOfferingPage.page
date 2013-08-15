@@ -25,21 +25,26 @@
 			
 			<apex:actionRegion >
 				<apex:pageBlockSection id="bondBuys" title="Bond Buys" columns="1" collapsible="false">
-			        <apex:selectList value="{!selectedFilter}" size="1" label="Investor Type Filter">
+			        <apex:selectList value="{!selectedFilter}" size="1" label="Investor Type Filter" id="selectList">
 	            		<apex:selectOptions value="{!investorTypeFilter}"/>
-	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" event="onchange" status="refreshBondBuyStatus"/>
+	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" event="onchange" status="refreshBondBuyStatus"/>
 					</apex:selectList>
-					
+					<apex:pageMessages id="mess"/>
 					<apex:actionStatus startText=" (refreshing...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s)." id="refreshBondBuyStatus" />
 			        <apex:outputPanel id="bondBuysPanel" >
 				        <apex:pageBlockTable value="{!bondBuyWrapsToDisplay}" var="bondBuyWrap" id="bondBuyTable">
 							<apex:column width="5%">
 								<apex:facet name="header">Select</apex:facet>
-								<apex:inputCheckbox value="{!bondBuyWrap.selected}"/>
+								<apex:inputCheckbox value="{!bondBuyWrap.selected}" rendered="{!(!bondBuyWrap.readOnly)}"/>
+								<apex:inputCheckbox value="{!bondBuyWrap.selected}" disabled="true" rendered="{!bondBuyWrap.readOnly}"/>
 							</apex:column>
 							<apex:column width="15%">
 								<apex:facet name="header">Units</apex:facet>
-								<apex:inputText value="{!bondBuyWrap.units}" required="true"/>
+								<apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!(!bondBuyWrap.readOnly)}">
+									<apex:outputPanel styleClass="requiredBlock" layout="block"/>
+									<apex:inputText value="{!bondBuyWrap.units}"/>
+								</apex:outputPanel>
+								<apex:outputText value="{!bondBuyWrap.units}" rendered="{!bondBuyWrap.readOnly}"/>
 							</apex:column>
 							<apex:column width="10%">
 								<apex:facet name="header">Status</apex:facet>
@@ -56,11 +61,11 @@
 						</apex:pageBlockTable>	
 					</apex:outputPanel>
 					<apex:outputPanel id="pagination">
-						<apex:commandButton action="{!firstPage}" value="|< First" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
-						<apex:commandButton action="{!previousPage}" value="< Previous" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
+						<apex:commandButton action="{!refreshBondBuys}" value="|< First" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
+						<apex:commandButton action="{!previousPage}" value="< Previous" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!pageNumber == 0}"/>
 						<apex:outputText value="Page {!pageNumber+1} of {!totalPages}"/>
-						<apex:commandButton action="{!nextPage}" value="Next >" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
-						<apex:commandButton action="{!lastPage}" value="Last >|" rerender="bondBuysPanel, refreshBondBuyStatus, pagination" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+						<apex:commandButton action="{!nextPage}" value="Next >" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+						<apex:commandButton action="{!lastPage}" value="Last >|" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="refreshBondBuyStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
 					</apex:outputPanel> 	
 				</apex:pageBlockSection>
 			</apex:actionRegion> 

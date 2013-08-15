@@ -34,7 +34,17 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 		set;
 	}
-	public String selectedFilter {get;set;}
+	public String selectedFilter {
+		get;
+		set {
+			if (String.isBlank(selectedFilter))
+				previousSelectedFilter = '--Any Type--';
+			previousSelectedFilter = selectedFilter;
+			selectedFilter = value;
+		}
+	}
+	public String previousSelectedFilter {get;set;}
+	
 	public List<bondBuySelectionWrapper> bondBuyWrapsToDisplay {get;set;}
 	public List<bondBuySelectionWrapper> bondBuyWrapsToSave {get;set;}
 	private Map<String,List<bondBuySelectionWrapper>> wrappersByTypeMap = new Map<String,List<bondBuySelectionWrapper>>();
@@ -48,10 +58,13 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 		private set;
 	}
-	
+	public boolean errorShown {get;set;}
 	public String filterValue {get;set;}
 	
+	private ApexPages.StandardController controller;
+	
 	public BondOfferingPageControllerExtension(ApexPages.StandardController stdController) {
+        controller = stdController;
         bondOffering = (Bond_Offering__c)stdController.getRecord();
         if (bondOffering.Id != null) {
         	bondOffering = [Select Name, Client__c, Interest_Rate__c, Sales_Rep__c, Units_Pending__c, Units_Sold__c from Bond_Offering__c where Id = :bondOffering.Id];
@@ -60,8 +73,8 @@ public with sharing class BondOfferingPageControllerExtension {
         }
         
         pageNumber = 0;
-        bondBuyWrapsToSave = getBondBuySelectionWrapperList();
-        getbondBuyWrapsToDisplay();
+        bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+        //getbondBuyWrapsToDisplay();
     }
 	
 	private void getbondBuyWrapsToDisplay(){
@@ -86,33 +99,46 @@ public with sharing class BondOfferingPageControllerExtension {
 		return options;
 	}
 	
+	public Boolean checkUnits () {
+		Boolean errorFound = false;
+		for (bondBuySelectionWrapper wrap : bondBuyWrapsToDisplay) {
+			if (String.isBlank(wrap.units) || !wrap.units.isNumeric()) {
+				errorFound = true;
+				break;
+			}
+		}
+		
+		return errorfound;
+	}
+	
 	public PageReference refreshBondBuys() {
-		pageNumber = 0;
-		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
-		return null;
+		return reloadList(0);
 	}
 	
 	public PageReference previousPage() {
-		pageNumber --;
-		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
-		return null;
+		return reloadList(pageNumber - 1);
 	}
 	
 	public PageReference nextPage() {
-		pageNumber ++;
-		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
-		return null;
+		return reloadList(pageNumber + 1);
 	}
 	
 	public PageReference lastPage() {
-		pageNumber = totalPages - 1;
-		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
-		return null;
+		return reloadList(totalPages - 1);
 	}
 	
-	public PageReference firstPage() {
-		pageNumber = 0;
-		bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+	private PageReference reloadList (Integer pageNumberIn) {
+		if (checkUnits()) {
+			ApexPages.Message myMsg = new ApexPages.Message(ApexPages.Severity.FATAL, 'Error found: Make sure you have entered a valid numbered in the units field for all investors');
+	        ApexPages.addMessage(myMsg);
+	        errorShown = true;
+	        selectedFilter = previousSelectedFilter;
+		}
+		else {
+			pageNumber = pageNumberIn;
+			bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+			errorShown = false;
+		}
 		return null;
 	}
 	
@@ -122,7 +148,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		Map<Id, Investor__c> tempInvestors = new Map<Id, Investor__c>();
 		Boolean newOffering = bondOffering.Id == null;
 		List<Bond_Buy__c> tempBondBuys = new List<Bond_Buy__c>();
-		String soqlQueryInvestors = 'Select Name, Type__c from Investor__c ';
+		String soqlQueryInvestors = 'Select Name, Type__c, Default_Bond_Units__c from Investor__c ';
 		
 		if (selectedFilter != null && selectedFilter != '' && selectedFilter != '--Any Type--') {
 			soqlQueryInvestors += ' where Type__c = :selectedFilter ';
@@ -137,17 +163,17 @@ public with sharing class BondOfferingPageControllerExtension {
 			System.debug(tempInvestors);
 			if (!newOffering) {
 				tempBondBuys = [Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buy__c where Bond_Offering__c = :bondOffering.Id and Investor__c in :tempInvestors.keySet()];
-				
 				for (Bond_Buy__c tempBondBuy : tempBondBuys) {
-					if (!wrappersShown.containsKey(tempBondBuy.Investor__c))
-						wrappersShown.put(tempBondBuy.Investor__c, new bondBuySelectionWrapper(tempBondBuy, false));
+					if (!wrappersShown.containsKey(tempBondBuy.Investor__c)) {
+						wrappersShown.put(tempBondBuy.Investor__c, new bondBuySelectionWrapper(tempBondBuy, true));
+					}
 					bondBuyWrappersMap.put(tempBondBuy.Investor__c,wrappersShown.get(tempBondBuy.Investor__c));
 				}
 			}
 			
 			for (Investor__c tempInvestor : tempInvestors.values()) {
 				if (!wrappersShown.containsKey(tempInvestor.Id))
-					wrappersShown.put(tempInvestor.Id,new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = 0, Investor__r = tempInvestor), false));
+					wrappersShown.put(tempInvestor.Id,new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = tempInvestor.Default_Bond_Units__c, Investor__r = tempInvestor, Investor__c = tempInvestor.Id), false));
 				bondBuyWrappersMap.put(tempInvestor.Id, wrappersShown.get(tempInvestor.Id));
 			}
 		}
@@ -159,17 +185,70 @@ public with sharing class BondOfferingPageControllerExtension {
 		return bondBuyWrappers;
 	}
 	
+	public PageReference save() {
+		if (checkUnits()) {
+			ApexPages.Message myMsg = new ApexPages.Message(ApexPages.Severity.FATAL, 'Error found: Make sure you have entered a valid numbered in the units field for all investors');
+	        ApexPages.addMessage(myMsg);
+	        errorShown = true;
+	        selectedFilter = previousSelectedFilter;
+	        return null;
+		}
+		PageReference result = controller.save();
+		bondOffering = (Bond_Offering__c) controller.getRecord();
+		saveBondBuys();
+		return result;
+	}
+	
+	private void saveBondBuys() {
+		List<bondBuySelectionWrapper> finalwrapperList = wrappersShown.values();
+		List<Bond_Buy__c> bondBuyListToUpsert = new List<Bond_Buy__c>();
+		List<Bond_Buy__c> bondBuyListToDelete = new List<Bond_Buy__c>();
+		for (bondBuySelectionWrapper wrapper : finalwrapperList) {
+			if (wrapper.toUpsert) {
+				if (wrapper.bondBuy.Status__c == 'New')
+					wrapper.bondBuy.Status__c = 'Pending';
+				wrapper.bondBuy.Bond_Offering__c = bondOffering.Id;
+				wrapper.bondBuy.Units__c = Double.valueOf(wrapper.units);
+				bondBuyListToUpsert.add(wrapper.bondBuy);
+			}
+			if (wrapper.toDelete)
+				bondBuyListToDelete.add(wrapper.bondBuy);
+		}
+		
+		upsert bondBuyListToUpsert;
+		delete bondBuyListToDelete;
+	}
+	
 	public class bondBuySelectionWrapper implements Comparable{
 		public Bond_Buy__c bondBuy {get;set;}
 		public Boolean selected {get;set;}
-		public String status {get;set;}
-		public Double units {
+		public String units {
 			get {
 				if (units == null)
-					units = bondBuy.Units__c;
+					units = String.valueOf(bondBuy.Units__c);
 				return units;
 			}
 			set;
+		}
+		public Boolean readOnly {
+			get {
+				if (bondBuy != null)
+					readOnly = bondBuy.Status__c != 'Pending' && bondBuy.Status__c != 'New';
+				return readOnly;
+			}
+			private set;
+		}
+		
+		public Boolean toUpsert {
+			get {
+				return selected && !readOnly;
+			}
+		}
+		
+		public Boolean toDelete {
+			get {
+				return !selected && bondBuy.Status__c != 'New';
+			}
 		}
 		
 		public bondBuySelectionWrapper (Bond_Buy__c bondBuyIn, Boolean selectedIn) {

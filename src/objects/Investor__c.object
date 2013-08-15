@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Clone</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Delete</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Edit</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>List</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>New</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>Tab</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Investors are universities, municipalities, pensions, and hedge funds with whom CJ has a relationship.  CJ pitches investors on purchasing units of bond offerings for their clients.</description>
+    <enableActivities>false</enableActivities>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>false</enableReports>
+    <fields>
+        <fullName>Acceptance_Rate__c</fullName>
+        <description>The percent of bonds pitched that the investor has purchased.</description>
+        <externalId>false</externalId>
+        <formula>IF(
+  Bonds_Pitched__c = 0
+, 0
+, Bonds_Purchased__c / Bonds_Pitched__c 
+)</formula>
+        <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+        <inlineHelpText>The percent of bonds pitched that the investor has purchased.</inlineHelpText>
+        <label>Acceptance Rate</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <type>Percent</type>
+    </fields>
+    <fields>
+        <fullName>Bonds_Pitched__c</fullName>
+        <defaultValue>0</defaultValue>
+        <description>The total number of bonds the client has been pitched.</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The total number of bonds the client has been pitched.</inlineHelpText>
+        <label>Bonds Pitched</label>
+        <precision>18</precision>
+        <required>true</required>
+        <scale>0</scale>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Bonds_Purchased__c</fullName>
+        <defaultValue>0</defaultValue>
+        <description>The total number of bonds the client has purchased.</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The total number of bonds the client has purchased.</inlineHelpText>
+        <label>Bonds Purchased</label>
+        <precision>18</precision>
+        <required>true</required>
+        <scale>0</scale>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Default_Bond_Units__c</fullName>
+        <defaultValue>10</defaultValue>
+        <description>The number of bond units the investor typically purchases per bond offering</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The number of bond units the investor typically purchases per bond offering</inlineHelpText>
+        <label>Default Bond Units</label>
+        <precision>18</precision>
+        <required>true</required>
+        <scale>0</scale>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Type__c</fullName>
+        <description>The number of bond units the investor typically purchases per bond offering</description>
+        <externalId>false</externalId>
+        <inlineHelpText>The number of bond units the investor typically purchases per bond offering</inlineHelpText>
+        <label>Type</label>
+        <picklist>
+            <picklistValues>
+                <fullName>University</fullName>
+                <default>false</default>
+            </picklistValues>
+            <picklistValues>
+                <fullName>Municipality</fullName>
+                <default>false</default>
+            </picklistValues>
+            <picklistValues>
+                <fullName>Pension</fullName>
+                <default>false</default>
+            </picklistValues>
+            <picklistValues>
+                <fullName>Hedge Funds</fullName>
+                <default>false</default>
+            </picklistValues>
+            <sorted>false</sorted>
+        </picklist>
+        <type>Picklist</type>
+    </fields>
+    <label>Investor</label>
+    <listViews>
+        <fullName>All</fullName>
+        <columns>NAME</columns>
+        <columns>Type__c</columns>
+        <columns>Default_Bond_Units__c</columns>
+        <columns>Bonds_Pitched__c</columns>
+        <columns>Bonds_Purchased__c</columns>
+        <columns>Acceptance_Rate__c</columns>
+        <filterScope>Everything</filterScope>
+        <label>All</label>
+    </listViews>
+    <nameField>
+        <label>Investor Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Investors</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>ReadWrite</sharingModel>
+    <startsWith>Vowel</startsWith>
+    <validationRules>
+        <fullName>Require_Type</fullName>
+        <active>true</active>
+        <description>Type is required</description>
+        <errorConditionFormula>ISBLANK(TEXT(Type__c))</errorConditionFormula>
+        <errorDisplayField>Type__c</errorDisplayField>
+        <errorMessage>Type is required</errorMessage>
+    </validationRules>
+</CustomObject>
