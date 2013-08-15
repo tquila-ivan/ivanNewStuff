@@ -54,7 +54,12 @@ public with sharing class BondOfferingPageControllerExtension {
 	private Double investorCount;
 	public Integer totalPages {
 		get {
-			return Integer.valueOf(Math.ceil(investorCount / pageSize));
+			if (investorCount == 0)
+				totalPages = 1;
+			else
+				totalPages = Integer.valueOf(Math.ceil(investorCount / pageSize));
+			
+			return totalPages;
 		}
 		private set;
 	}
