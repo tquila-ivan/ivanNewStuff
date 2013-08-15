@@ -46,7 +46,14 @@ public with sharing class BondOfferingPageControllerExtension {
 	public String previousSelectedFilter {get;set;}
 	
 	public List<bondBuySelectionWrapper> bondBuyWrapsToDisplay {get;set;}
-	public List<bondBuySelectionWrapper> bondBuyWrapsToSave {get;set;}
+	public List<bondBuySelectionWrapper> bondBuyWrapsToPaginate {
+		get {
+			if (bondBuyWrapsToPaginate == null)
+				bondBuyWrapsToPaginate = new List<bondBuySelectionWrapper>();
+			return bondBuyWrapsToPaginate;
+		}
+		set;
+	}
 	private Map<String,List<bondBuySelectionWrapper>> wrappersByTypeMap = new Map<String,List<bondBuySelectionWrapper>>();
 	private Map<String,bondBuySelectionWrapper> wrappersShown = new Map<String,bondBuySelectionWrapper>();
 	public Integer pageNumber {get;set;}
@@ -76,17 +83,17 @@ public with sharing class BondOfferingPageControllerExtension {
         	unitsSold = Integer.valueOf(bondOffering.Units_Sold__c);
         	unitsPending = Integer.valueOf(bondOffering.Units_Pending__c);
         }
-        
-        pageNumber = 0;
-        bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+
+        getBondBuySelectionWrapperList();
     }
 	
 	private void getbondBuyWrapsToDisplay(){
 		bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
-		for (Integer i = pageNumber*pagesize; i < pageSize; i++) {
-        	if (i >= bondBuyWrapsToSave.size())
+		System.debug('starting index: ' + pageNumber*pagesize);
+		for (Integer i = pageNumber*pagesize; i < pageNumber*pagesize + pageSize; i++) {
+        	if (i >= bondBuyWrapsToPaginate.size())
         		break;
-        	bondBuyWrapsToDisplay.add(bondBuyWrapsToSave.get(i));
+        	bondBuyWrapsToDisplay.add(bondBuyWrapsToPaginate.get(i));
         }
 	}
 	
@@ -134,7 +141,7 @@ public with sharing class BondOfferingPageControllerExtension {
 	private PageReference reloadList (Integer pageNumberIn) {
 		if (allUnitsValid()) {
 			pageNumber = pageNumberIn;
-			bondBuyWrapsToDisplay = getBondBuySelectionWrapperList();
+			getBondBuyWrappersToDisplay();
 			errorShown = false;
 		}
 		else {
@@ -146,47 +153,61 @@ public with sharing class BondOfferingPageControllerExtension {
 		return null;
 	}
 	
-	public List<bondBuySelectionWrapper> getBondBuySelectionWrapperList() {
-		List<bondBuySelectionWrapper> bondBuyWrappers = new List<bondBuySelectionWrapper>();
-		Map<Id, bondBuySelectionWrapper> bondBuyWrappersMap = new Map<Id, bondBuySelectionWrapper>();
-		Map<Id, Investor__c> tempInvestors = new Map<Id, Investor__c>();
-		Boolean newOffering = bondOffering.Id == null;
-		List<Bond_Buy__c> tempBondBuys = new List<Bond_Buy__c>();
-		String soqlQueryInvestors = 'Select Name, Type__c, Default_Bond_Units__c from Investor__c ';
-		
-		if (!String.isBlank(selectedFilter) && selectedFilter != '--Any Type--') {
-			soqlQueryInvestors += ' where Type__c = :selectedFilter ';
-			investorCount = [Select count() from Investor__c where Type__c = :selectedFilter];
-		}
-		else
-			investorCount = [Select count() from Investor__c];
-		Integer offSet = pageNumber*pagesize;
-		soqlQueryInvestors += ' Order by Name Asc LIMIT :pageSize OFFSET :offSet';
-		try {
-			tempInvestors = new Map<Id, Investor__c>((List<Investor__c>)Database.query(soqlQueryInvestors));
-			System.debug(tempInvestors);
-			if (!newOffering) {
-				tempBondBuys = [Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buy__c where Bond_Offering__c = :bondOffering.Id and Investor__c in :tempInvestors.keySet()];
-				for (Bond_Buy__c tempBondBuy : tempBondBuys) {
-					if (!wrappersShown.containsKey(tempBondBuy.Investor__c)) {
-						wrappersShown.put(tempBondBuy.Investor__c, new bondBuySelectionWrapper(tempBondBuy, true));
-					}
-					bondBuyWrappersMap.put(tempBondBuy.Investor__c,wrappersShown.get(tempBondBuy.Investor__c));
-				}
+	public void getBondBuyWrappersToDisplay() {
+		if (previousSelectedFilter != selectedFilter) {
+			bondBuyWrapsToPaginate = new List<bondBuySelectionWrapper>();
+			if (selectedFilter != '--Any Type--') {
+				bondBuyWrapsToPaginate = wrappersByTypeMap.get(selectedFilter);
 			}
-			
-			for (Investor__c tempInvestor : tempInvestors.values()) {
-				if (!wrappersShown.containsKey(tempInvestor.Id))
-					wrappersShown.put(tempInvestor.Id,new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = tempInvestor.Default_Bond_Units__c, Investor__r = tempInvestor, Investor__c = tempInvestor.Id), false));
-				bondBuyWrappersMap.put(tempInvestor.Id, wrappersShown.get(tempInvestor.Id));
+			else {
+				for (String key : wrappersByTypeMap.keySet()) {
+					bondBuyWrapsToPaginate.addAll(wrappersByTypeMap.get(key));
+				}	
+			}
+			investorCount = bondBuyWrapsToPaginate.size();
+		}
+		if (!bondBuyWrapsToPaginate.isEmpty())
+			bondBuyWrapsToPaginate.sort();
+		getbondBuyWrapsToDisplay();
+	}
+	
+	
+	public void getBondBuySelectionWrapperList() {
+		List<Investor__c> tempInvestors = new List<Investor__c>();
+		bondBuySelectionWrapper tempWrapper;
+		Boolean newOffering = bondOffering.Id == null;
+		List<bondBuySelectionWrapper> wrappersPerType = new List<bondBuySelectionWrapper>();
+		String soqlQueryInvestors = 'Select Name, Type__c, Default_Bond_Units__c';
+		
+		if(!newOffering)
+			soqlQueryInvestors += ', (Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buys__r where Bond_Offering__c = \'' + bondOffering.Id + '\' Limit 1)';
+		soqlQueryInvestors += ' from Investor__c order by Name Asc';
+
+		try {
+			tempInvestors = new List<Investor__c>((List<Investor__c>)Database.query(soqlQueryInvestors));
+			bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
+			Integer i = 0;
+			investorCount = tempInvestors.size();
+			pageNumber = 0;
+			for (Investor__c tempInvestor : tempInvestors) {
+				wrappersPerType = wrappersByTypeMap.get(tempInvestor.Type__c);
+				if (wrappersPerType == null)
+					wrappersPerType = new List<bondBuySelectionWrapper>();
+					
+				if (tempInvestor.Bond_Buys__r == null || tempInvestor.Bond_Buys__r.isEmpty())
+					tempWrapper = new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = tempInvestor.Default_Bond_Units__c, Investor__r = tempInvestor, Investor__c = tempInvestor.Id), false);
+				else
+					tempWrapper = new bondBuySelectionWrapper(tempInvestor.Bond_Buys__r[0], true);
+				if(i < pageSize)
+					bondBuyWrapsToDisplay.add(tempWrapper);
+				wrappersPerType.add(tempWrapper);
+				wrappersByTypeMap.put(tempInvestor.Type__c, wrappersPerType);
+				i++;
 			}
 		}
 		catch (Exception ex) {
 			System.debug(ex.getMessage() + 'messss ' + ex.getStackTraceString());
 		}
-		bondBuyWrappers = bondBuyWrappersMap.values();
-		bondBuyWrappers.sort();
-		return bondBuyWrappers;
 	}
 	
 	public PageReference save() {
@@ -204,7 +225,10 @@ public with sharing class BondOfferingPageControllerExtension {
 	}
 	
 	private void saveBondBuys() {
-		List<bondBuySelectionWrapper> finalwrapperList = wrappersShown.values();
+		List<bondBuySelectionWrapper> finalwrapperList = new List<bondBuySelectionWrapper>();
+		for (String key : wrappersByTypeMap.keySet()) {
+			finalwrapperList.addAll(wrappersByTypeMap.get(key));
+		}
 		List<Bond_Buy__c> bondBuyListToUpsert = new List<Bond_Buy__c>();
 		List<Bond_Buy__c> bondBuyListToDelete = new List<Bond_Buy__c>();
 		for (bondBuySelectionWrapper wrapper : finalwrapperList) {
