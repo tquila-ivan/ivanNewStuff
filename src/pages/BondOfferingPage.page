@@ -41,7 +41,7 @@
 	            		<apex:selectOptions value="{!investorTypeFilter}"/>
 	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" event="onchange" status="refreshBondBuyStatus"/>
 					</apex:selectList>
-					<apex:actionStatus startText=" (filtering...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s)." id="refreshBondBuyStatus" />
+					<apex:actionStatus startText=" (filtering...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s) from a total of {!investorCount}." id="refreshBondBuyStatus" />
 			        <apex:outputPanel id="bondBuysPanel" >
 			        <apex:pageMessages id="mess" rendered="{!errorShown}"/>
 				        <apex:pageBlockTable value="{!bondBuyWrapsToDisplay}" var="bondBuyWrap" id="bondBuyTable">
@@ -79,11 +79,11 @@
 							<apex:facet name="stop">
 								<apex:outputPanel >
 								<center>
-									<apex:commandButton action="{!refreshBondBuys}" value="|< First" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 0}"/>
-									<apex:commandButton action="{!previousPage}" value="< Previous" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 0}"/>
-									<apex:outputText value="Page {!pageNumber+1} of {!totalPages}"/>
-									<apex:commandButton action="{!nextPage}" value="Next >" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
-									<apex:commandButton action="{!lastPage}" value="Last >|" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == (pageNumber + 1)}"/>
+									<apex:commandButton action="{!firstPage}" value="|< First" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 1}"/>
+									<apex:commandButton action="{!previousPage}" value="< Previous" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 1}"/>
+									<apex:outputText value="Page {!pageNumber} of {!totalPages}"/>
+									<apex:commandButton action="{!nextPage}" value="Next >" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == pageNumber}"/>
+									<apex:commandButton action="{!lastPage}" value="Last >|" rerender="bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == pageNumber}"/>
 								</center>
 								</apex:outputPanel>
 							</apex:facet>
