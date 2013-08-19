@@ -44,7 +44,7 @@
 					</apex:selectList>
 					<apex:actionStatus startText=" (filtering...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s) from a total of {!investorCount}." id="refreshBondBuyStatus" />
 			        <apex:outputPanel id="bondBuysPanel" >
-			        <apex:pageMessages id="mess" rendered="{!errorShown}"/>
+			       		<apex:pageMessages id="mess" rendered="{!errorShown}"/>
 				        <apex:pageBlockTable value="{!bondBuyWrapsToDisplay}" var="bondBuyWrap" id="bondBuyTable">
 							<apex:column width="5%">
 								<apex:facet name="header">Select</apex:facet>
@@ -58,7 +58,6 @@
 									<apex:inputText value="{!bondBuyWrap.units}"/>
 								</apex:outputPanel>
 								<apex:outputText value="{!bondBuyWrap.units}" rendered="{!bondBuyWrap.readOnly}"/>
-								({!bondBuyWrap.bondBuy.Units__c})
 							</apex:column>
 							<apex:column width="10%">
 								<apex:facet name="header">Status</apex:facet>

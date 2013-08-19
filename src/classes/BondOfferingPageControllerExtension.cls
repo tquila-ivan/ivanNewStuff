@@ -266,12 +266,20 @@ public with sharing class BondOfferingPageControllerExtension {
 		if (!allUnitsValid())
 	        return null;
 	    storeSelected();
-	    if (!isNewOffering) {
-        	bondOffering = [Select Units_Pending__c, Units_Sold__c, Units_Remaining__c from Bond_Offering__c where Id = :bondOffering.Id];
-        }
+	    
 	    Savepoint sp = Database.setSavepoint();
-		PageReference result = controller.save();
-		Set<Id> relatedBondBuys = saveBondBuys();
+	    
+	    if (!isNewOffering)
+        	bondOffering = [Select Units_Pending__c, Units_Sold__c, Units_Remaining__c from Bond_Offering__c where Id = :bondOffering.Id];
+        else
+        	bondOffering.Client__c = ((Bond_Offering__c) controller.getRecord()).Client__c;
+	    bondOffering.Name = ((Bond_Offering__c) controller.getRecord()).Name;
+	    bondOffering.Interest_Rate__c = ((Bond_Offering__c) controller.getRecord()).Interest_Rate__c;
+	    bondOffering.Sales_Rep__c = ((Bond_Offering__c) controller.getRecord()).Sales_Rep__c;
+	    upsert bondOffering;
+		PageReference result = new PageReference('/' + bondOffering.Id);
+		Id newOfferId = bondOffering.Id;
+		Set<Id> relatedBondBuys = saveBondBuys(newOfferId);
 		if (errorShown) {
 			Database.rollback(sp);
 			rollBackWrappers(relatedBondBuys);
@@ -286,7 +294,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		return result;
 	}
 	
-	private Set<Id> saveBondBuys() {
+	private Set<Id> saveBondBuys(Id newOfferId) {
 		List<bondBuySelectionWrapper> finalwrapperList = wrappersChanged.values();
 		List<Bond_Buy__c> bondBuyListToInsert = new List<Bond_Buy__c>();
 		List<Bond_Buy__c> bondBuyListToUpdate = new List<Bond_Buy__c>();
@@ -296,7 +304,7 @@ public with sharing class BondOfferingPageControllerExtension {
 			if (wrapper.toUpsert) {
 				if (wrapper.bondBuy.Status__c == 'New')
 					wrapper.bondBuy.Status__c = 'Pending';
-				wrapper.bondBuy.Bond_Offering__c = bondOffering.Id;
+				wrapper.bondBuy.Bond_Offering__c = newOfferId;
 				wrapper.bondBuy.Units__c = Double.valueOf(wrapper.units);
 				if (wrapper.bondBuy.Id != null) {
 					relatedBondBuys.add(wrapper.bondBuy.Id);
@@ -323,6 +331,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		catch (Exception ex) {
 			errorShown = true;
 		}
+		
 		try {
 			insert bondBuyListToInsert;
 		}

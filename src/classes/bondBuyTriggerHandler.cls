@@ -69,7 +69,18 @@ public with sharing class bondBuyTriggerHandler {
     		if (validInvestor)
     			investorMap.put(investor.Id, investor);
     	}
-    	
+
+		/*List<Database.SaveResult> offeringresult = Database.update(bondOfferingMap.values(), false);
+		System.debug('Trig 1: ' + offeringresult + ' ' + bondOfferingMap.size());
+		for (Database.SaveResult result : offeringresult) {
+			System.debug('Trig: ' + result.isSuccess() + ' ' + result.getErrors());
+			if (!result.isSuccess()) {
+    			for (Bond_Buy__c bondBuy : bondBuyList) {
+    				System.debug('Seraaaa');
+    				bondBuy.addError('Error');
+    			}
+			}
+		}*/
     	update bondOfferingMap.values();
     	update investorMap.values();
     }

@@ -1,5 +1,4 @@
-trigger bondBuyTrigger on Bond_Buy__c (after delete, after insert, after undelete, 
-after update, before delete, before insert, before update) {
+trigger bondBuyTrigger on Bond_Buy__c (after delete, after insert, after undelete, after update) {
 
 	//Create the Handler instance passing the proper parameters
 	bondBuyTriggerHandler handler = new bondBuyTriggerHandler(Trigger.isExecuting, Trigger.size);
