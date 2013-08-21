@@ -5,19 +5,19 @@ trigger bondBuyTrigger on Bond_Buy__c (after delete, after insert, after undelet
 
 	if (Trigger.isAfter) {	
 		if (Trigger.isInsert) {
-			handler.bondBuyAfterInsertUndelete(Trigger.new);
+			handler.bondBuyAfterInsertUndelete(Trigger.new, Trigger.newMap);
 		}
 		
 		if (Trigger.isUpdate) {
-			handler.bondBuyAfterUpdate(Trigger.new, Trigger.oldMap);
+			handler.bondBuyAfterUpdate(Trigger.new, Trigger.oldMap, Trigger.newMap);
 		}
 		
 		if (Trigger.isDelete) {
-			handler.bondBuyAfterDelete(Trigger.old);
+			handler.bondBuyAfterDelete(Trigger.old, Trigger.oldMap);
 		}
 		
 		if (Trigger.isUnDelete) {
-			handler.bondBuyAfterInsertUndelete(Trigger.new);
+			handler.bondBuyAfterInsertUndelete(Trigger.new, Trigger.newMap);
 		}
 	}
 }

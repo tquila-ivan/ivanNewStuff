@@ -16,7 +16,7 @@ public with sharing class bondBuyTriggerHandler {
     }
     
     //AFTER INSERT - UNDELETE
-    public void bondBuyAfterInsertUndelete(List<Bond_Buy__c> bondBuyListIn) {
+    public void bondBuyAfterInsertUndelete(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyNewMap) {
     	
     	bondBuyListFilter(bondBuyListIn, null, false);
     	
@@ -28,64 +28,57 @@ public with sharing class bondBuyTriggerHandler {
     	Boolean validBondOffering = true;
     	
     	for (Bond_Buy__c bondBuy : bondBuyList) {
-    		
-    		validInvestor = bondBuy.Investor__c != null;
-    		validBondOffering = bondBuy.Bond_Offering__c != null;
-    		
-    		if (validInvestor) {
-    			investor = new Investor__c(Id = bondBuy.Investor__c);
-	    		if (investorMap.containsKey(investor.Id))
-					investor = investorMap.get(investor.Id);
-				else {
-					investor.Bonds_Pitched__c = bondBuy.Investor__r.Bonds_Pitched__c;
-					investor.Bonds_Purchased__c = bondBuy.Investor__r.Bonds_Purchased__c;
+    		try {
+	    		validInvestor = bondBuy.Investor__c != null;
+	    		validBondOffering = bondBuy.Bond_Offering__c != null;
+	    		
+	    		if (validInvestor) {
+	    			investor = new Investor__c(Id = bondBuy.Investor__c);
+		    		if (investorMap.containsKey(investor.Id))
+						investor = investorMap.get(investor.Id);
+					else {
+						investor.Bonds_Pitched__c = bondBuy.Investor__r.Bonds_Pitched__c;
+						investor.Bonds_Purchased__c = bondBuy.Investor__r.Bonds_Purchased__c;
+					}
+					investor.Bonds_Pitched__c ++;
+	    		}
+				
+				if (validBondOffering) {
+					bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
+					if (bondOfferingMap.containsKey(bondOffering.Id))
+						bondOffering = bondOfferingMap.get(bondOffering.Id);
+					else {
+						bondOffering.Units_Pending__c = bondBuy.Bond_Offering__r.Units_Pending__c;
+						bondOffering.Units_Sold__c = bondBuy.Bond_Offering__r.Units_Sold__c;
+					}
 				}
-				investor.Bonds_Pitched__c ++;
+	    		
+	    		if (bondBuy.Status__c == 'Pending') {
+	    			if (validBondOffering)
+	    				bondOffering.Units_Pending__c += bondBuy.Units__c;
+	    		}
+	    		if (bondBuy.Status__c == 'Purchased') {
+	    			if (validBondOffering)
+	    				bondOffering.Units_Sold__c +=  bondBuy.Units__c;
+	    			if (validInvestor)
+	    				investor.Bonds_Purchased__c ++;
+	    		}
+	    		
+	    		if (validBondOffering)
+	    			bondOfferingMap.put(bondOffering.Id, bondOffering);	
+	    		if (validInvestor)
+	    			investorMap.put(investor.Id, investor);
     		}
-			
-			if (validBondOffering) {
-				bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
-				if (bondOfferingMap.containsKey(bondOffering.Id))
-					bondOffering = bondOfferingMap.get(bondOffering.Id);
-				else {
-					bondOffering.Units_Pending__c = bondBuy.Bond_Offering__r.Units_Pending__c;
-					bondOffering.Units_Sold__c = bondBuy.Bond_Offering__r.Units_Sold__c;
-				}
-			}
-    		
-    		if (bondBuy.Status__c == 'Pending') {
-    			if (validBondOffering)
-    				bondOffering.Units_Pending__c += bondBuy.Units__c;
+    		catch (Exception ex) {
+    			bondBuyNewMap.get(bondBuy.Id).addError('Error individual');
+    			BondOfferingPageControllerExtension.DMLerrors = true;
     		}
-    		if (bondBuy.Status__c == 'Purchased') {
-    			if (validBondOffering)
-    				bondOffering.Units_Sold__c +=  bondBuy.Units__c;
-    			if (validInvestor)
-    				investor.Bonds_Purchased__c ++;
-    		}
-    		
-    		if (validBondOffering)
-    			bondOfferingMap.put(bondOffering.Id, bondOffering);	
-    		if (validInvestor)
-    			investorMap.put(investor.Id, investor);
     	}
 
-		/*List<Database.SaveResult> offeringresult = Database.update(bondOfferingMap.values(), false);
-		System.debug('Trig 1: ' + offeringresult + ' ' + bondOfferingMap.size());
-		for (Database.SaveResult result : offeringresult) {
-			System.debug('Trig: ' + result.isSuccess() + ' ' + result.getErrors());
-			if (!result.isSuccess()) {
-    			for (Bond_Buy__c bondBuy : bondBuyList) {
-    				System.debug('Seraaaa');
-    				bondBuy.addError('Error');
-    			}
-			}
-		}*/
-    	update bondOfferingMap.values();
-    	update investorMap.values();
+		saveAndHandleErrors(bondOfferingMap.values(), investorMap.values(), bondBuyListIn);
     }
     
-    public void bondBuyAfterUpdate(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap) {
+    public void bondBuyAfterUpdate(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap, Map<Id, Bond_Buy__c> bondBuyNewMap) {
     	
     	bondBuyListFilter(bondBuyListIn, bondBuyOldMap, false);
     	
@@ -105,212 +98,215 @@ public with sharing class bondBuyTriggerHandler {
     	Investor__c oldInvestor = new Investor__c();
     	
     	for (Bond_Buy__c bondBuy : bondBuyList) {
-
-    		oldBondBuy = bondBuyOldMap.get(bondBuy.Id);
-			validInvestor = bondBuy.Investor__c != null;
-			validOldInvestor = oldBondBuy.Investor__c != null;
-			validOffering = bondBuy.Bond_Offering__c != null;
-			validOldOffering = oldBondBuy.Bond_Offering__c != null;
-			offeringChanged = bondBuy.Bond_Offering__c != oldBondBuy.Bond_Offering__c;
-			investorChanged = bondBuy.Investor__c != oldBondBuy.Investor__c;
-			statusChanged = bondBuy.Status__c != oldBondBuy.Status__c;
-			unitsChanged = bondBuy.Units__c != oldBondBuy.Units__c;
-			
-			if (validOldInvestor) {
-				oldInvestor = oldInvestorMap.get(oldBondBuy.Investor__c);
-				if (oldInvestor != null) {
-					if (investorMap.containsKey(oldInvestor.Id))
-						oldInvestor = investorMap.get(oldInvestor.Id);
-				}
-			}
-			
-			if (validInvestor) {
-				investor = new Investor__c(Id = bondBuy.Investor__c);
-				if (investorMap.containsKey(investor.Id))
-					investor = investorMap.get(investor.Id);
-				else {
-					investor.Bonds_Pitched__c = bondBuy.Investor__r.Bonds_Pitched__c;
-					investor.Bonds_Purchased__c = bondBuy.Investor__r.Bonds_Purchased__c;
-				}
-			}
-			
-			if (validOldOffering) {
-				oldOffering = oldOfferingMap.get(oldBondBuy.Bond_Offering__c);
-				if (oldOffering != null) {
-					if (bondOfferingMap.containsKey(oldOffering.Id))
-						oldOffering = bondOfferingMap.get(oldOffering.Id);
-				}
-			}
-			
-			if (validOffering) {
-				bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
-				if (bondOfferingMap.containsKey(bondOffering.Id))
-					bondOffering = bondOfferingMap.get(bondOffering.Id);
-				else {
-					bondOffering.Units_Pending__c = bondBuy.Bond_Offering__r.Units_Pending__c;
-					bondOffering.Units_Sold__c = bondBuy.Bond_Offering__r.Units_Sold__c;
-				}
-			}
-					
-			if (investorChanged) {
+			try {
+	    		oldBondBuy = bondBuyOldMap.get(bondBuy.Id);
+				validInvestor = bondBuy.Investor__c != null;
+				validOldInvestor = oldBondBuy.Investor__c != null;
+				validOffering = bondBuy.Bond_Offering__c != null;
+				validOldOffering = oldBondBuy.Bond_Offering__c != null;
+				offeringChanged = bondBuy.Bond_Offering__c != oldBondBuy.Bond_Offering__c;
+				investorChanged = bondBuy.Investor__c != oldBondBuy.Investor__c;
+				statusChanged = bondBuy.Status__c != oldBondBuy.Status__c;
+				unitsChanged = bondBuy.Units__c != oldBondBuy.Units__c;
+				
 				if (validOldInvestor) {
-					oldInvestor.Bonds_Pitched__c = oldInvestor.Bonds_Pitched__c - 1;
-					if (oldBondBuy.Status__c == 'Purchased')
-						oldInvestor.Bonds_Purchased__c = oldInvestor.Bonds_Purchased__c - 1;
-					investorMap.put(oldInvestor.Id, oldInvestor);
+					oldInvestor = oldInvestorMap.get(oldBondBuy.Investor__c);
+					if (oldInvestor != null) {
+						if (investorMap.containsKey(oldInvestor.Id))
+							oldInvestor = investorMap.get(oldInvestor.Id);
+					}
 				}
 				
 				if (validInvestor) {
-					investor.Bonds_Pitched__c = investor.Bonds_Pitched__c + 1;
-					if (bondBuy.Status__c == 'Purchased')
-						investor.Bonds_Purchased__c = investor.Bonds_Purchased__c + 1;
-				}
-			}
-			
-			if (statusChanged) {
-				if (oldBondBuy.Status__c == 'Pending') {
-		    		if (bondBuy.Status__c == 'Passed') {
-		    			if (offeringChanged) {
-		    				if (validOldOffering) {
-			    				oldOffering.Units_Pending__c = oldOffering.Units_Pending__c - oldBondBuy.Units__c;
-			    				bondOfferingMap.put(oldOffering.Id, oldOffering);
-		    				}
-		    			}
-		    			else {
-		    				if (validOffering) {
-			    				bondOffering.Units_Pending__c -= oldBondBuy.Units__c;
-			    				bondOfferingMap.put(bondOffering.Id, bondOffering);
-		    				}
-		    			}
-		    		}
-		    		else if (bondBuy.Status__c == 'Purchased') {
-		    			if (!investorChanged && validInvestor) {
-			    			investor.Bonds_Purchased__c ++;
-			    			investorMap.put(investor.Id, investor);
-			    			investorAdded = true;
-		    			}
-	    				
-		    			if (offeringChanged) {
-		    				if (validOldOffering) {
-			    				oldOffering.Units_Pending__c -= oldBondBuy.Units__c;
-			    				bondOfferingMap.put(oldOffering.Id, oldOffering);
-		    				}
-		    			}
-		    			else {
-		    				if (validOffering)
-		    					bondOffering.Units_Pending__c -= oldBondBuy.Units__c;
-		    			}
-		    			
-		    			if (validOffering) {
-			    			bondOffering.Units_Sold__c += bondBuy.Units__c;
-			    			bondOfferingMap.put(bondOffering.Id, bondOffering);
-		    			}
-		    		}
-				}
-				else if (oldBondBuy.Status__c == 'Passed') {
-					if (bondBuy.Status__c == 'Pending') {
-						if (validOffering) {
-							bondOffering.Units_Pending__c += bondBuy.Units__c;
-							bondOfferingMap.put(bondOffering.Id, bondOffering);
-						}
+					investor = new Investor__c(Id = bondBuy.Investor__c);
+					if (investorMap.containsKey(investor.Id))
+						investor = investorMap.get(investor.Id);
+					else {
+						investor.Bonds_Pitched__c = bondBuy.Investor__r.Bonds_Pitched__c;
+						investor.Bonds_Purchased__c = bondBuy.Investor__r.Bonds_Purchased__c;
 					}
-		    		else if (bondBuy.Status__c == 'Purchased') {
-		    			
-		    			if (!investorChanged && validInvestor) {
-		    				investor.Bonds_Purchased__c ++;
-		    				investorMap.put(investor.Id, investor);
-		    				investorAdded = true;
-		    			}
-		    			
-		    			if(validOffering) {
-			    			bondOffering.Units_Sold__c += bondBuy.Units__c;
-			    			bondOfferingMap.put(bondOffering.Id, bondOffering);
-		    			}
-		    		}
 				}
-				else if (oldBondBuy.Status__c == 'Purchased') {
-					if (!investorChanged && validInvestor) {
-						investor.Bonds_Purchased__c --;
-			    		investorMap.put(investor.Id, investor);
-			    		investorAdded = true;
+				
+				if (validOldOffering) {
+					oldOffering = oldOfferingMap.get(oldBondBuy.Bond_Offering__c);
+					if (oldOffering != null) {
+						if (bondOfferingMap.containsKey(oldOffering.Id))
+							oldOffering = bondOfferingMap.get(oldOffering.Id);
 					}
-		    		
-					if (bondBuy.Status__c == 'Pending') {
+				}
+				
+				if (validOffering) {
+					bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
+					if (bondOfferingMap.containsKey(bondOffering.Id))
+						bondOffering = bondOfferingMap.get(bondOffering.Id);
+					else {
+						bondOffering.Units_Pending__c = bondBuy.Bond_Offering__r.Units_Pending__c;
+						bondOffering.Units_Sold__c = bondBuy.Bond_Offering__r.Units_Sold__c;
+					}
+				}
 						
-						if (offeringChanged) {
-							if (validOldOffering) {
-								oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
-								bondOfferingMap.put(oldOffering.Id, oldOffering);
-							}
-						}
-						else {
-							if (validOffering)
-								bondOffering.Units_Sold__c -= oldBondBuy.Units__c;
-						}
-						
-						if (validOffering) {
-							bondOffering.Units_Pending__c += bondBuy.Units__c;
-							bondOfferingMap.put(bondOffering.Id, bondOffering);
-						}
+				if (investorChanged) {
+					if (validOldInvestor) {
+						oldInvestor.Bonds_Pitched__c = oldInvestor.Bonds_Pitched__c - 1;
+						if (oldBondBuy.Status__c == 'Purchased')
+							oldInvestor.Bonds_Purchased__c = oldInvestor.Bonds_Purchased__c - 1;
+						investorMap.put(oldInvestor.Id, oldInvestor);
 					}
-					else if (bondBuy.Status__c == 'Passed') {
-						if (offeringChanged) {
-							if (validOldOffering) {
-								oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
-								bondOfferingMap.put(oldOffering.Id, oldOffering);
-							}
-						}
-						else {
+					
+					if (validInvestor) {
+						investor.Bonds_Pitched__c = investor.Bonds_Pitched__c + 1;
+						if (bondBuy.Status__c == 'Purchased')
+							investor.Bonds_Purchased__c = investor.Bonds_Purchased__c + 1;
+					}
+				}
+				
+				if (statusChanged) {
+					if (oldBondBuy.Status__c == 'Pending') {
+			    		if (bondBuy.Status__c == 'Passed') {
+			    			if (offeringChanged) {
+			    				if (validOldOffering) {
+				    				oldOffering.Units_Pending__c = oldOffering.Units_Pending__c - oldBondBuy.Units__c;
+				    				bondOfferingMap.put(oldOffering.Id, oldOffering);
+			    				}
+			    			}
+			    			else {
+			    				if (validOffering) {
+				    				bondOffering.Units_Pending__c -= oldBondBuy.Units__c;
+				    				bondOfferingMap.put(bondOffering.Id, bondOffering);
+			    				}
+			    			}
+			    		}
+			    		else if (bondBuy.Status__c == 'Purchased') {
+			    			if (!investorChanged && validInvestor) {
+				    			investor.Bonds_Purchased__c ++;
+				    			investorMap.put(investor.Id, investor);
+				    			investorAdded = true;
+			    			}
+		    				
+			    			if (offeringChanged) {
+			    				if (validOldOffering) {
+				    				oldOffering.Units_Pending__c -= oldBondBuy.Units__c;
+				    				bondOfferingMap.put(oldOffering.Id, oldOffering);
+			    				}
+			    			}
+			    			else {
+			    				if (validOffering)
+			    					bondOffering.Units_Pending__c -= oldBondBuy.Units__c;
+			    			}
+			    			
+			    			if (validOffering) {
+				    			bondOffering.Units_Sold__c += bondBuy.Units__c;
+				    			bondOfferingMap.put(bondOffering.Id, bondOffering);
+			    			}
+			    		}
+					}
+					else if (oldBondBuy.Status__c == 'Passed') {
+						if (bondBuy.Status__c == 'Pending') {
 							if (validOffering) {
-								bondOffering.Units_Sold__c -= oldBondBuy.Units__c;
+								bondOffering.Units_Pending__c += bondBuy.Units__c;
 								bondOfferingMap.put(bondOffering.Id, bondOffering);
 							}
 						}
+			    		else if (bondBuy.Status__c == 'Purchased') {
+			    			
+			    			if (!investorChanged && validInvestor) {
+			    				investor.Bonds_Purchased__c ++;
+			    				investorMap.put(investor.Id, investor);
+			    				investorAdded = true;
+			    			}
+			    			
+			    			if(validOffering) {
+				    			bondOffering.Units_Sold__c += bondBuy.Units__c;
+				    			bondOfferingMap.put(bondOffering.Id, bondOffering);
+			    			}
+			    		}
+					}
+					else if (oldBondBuy.Status__c == 'Purchased') {
+						if (!investorChanged && validInvestor) {
+							investor.Bonds_Purchased__c --;
+				    		investorMap.put(investor.Id, investor);
+				    		investorAdded = true;
+						}
+			    		
+						if (bondBuy.Status__c == 'Pending') {
+							
+							if (offeringChanged) {
+								if (validOldOffering) {
+									oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
+									bondOfferingMap.put(oldOffering.Id, oldOffering);
+								}
+							}
+							else {
+								if (validOffering)
+									bondOffering.Units_Sold__c -= oldBondBuy.Units__c;
+							}
+							
+							if (validOffering) {
+								bondOffering.Units_Pending__c += bondBuy.Units__c;
+								bondOfferingMap.put(bondOffering.Id, bondOffering);
+							}
+						}
+						else if (bondBuy.Status__c == 'Passed') {
+							if (offeringChanged) {
+								if (validOldOffering) {
+									oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
+									bondOfferingMap.put(oldOffering.Id, oldOffering);
+								}
+							}
+							else {
+								if (validOffering) {
+									bondOffering.Units_Sold__c -= oldBondBuy.Units__c;
+									bondOfferingMap.put(bondOffering.Id, bondOffering);
+								}
+							}
+						}
 					}
 				}
-			}
-			else {
-				if (offeringChanged) {
-					if (bondBuy.Status__c == 'Pending') {
-						if (validOldOffering) {
-							oldOffering.Units_Pending__c -= oldBondBuy.Units__c;
-							bondOfferingMap.put(oldOffering.id, oldOffering);
+				else {
+					if (offeringChanged) {
+						if (bondBuy.Status__c == 'Pending') {
+							if (validOldOffering) {
+								oldOffering.Units_Pending__c -= oldBondBuy.Units__c;
+								bondOfferingMap.put(oldOffering.id, oldOffering);
+							}
+							if (validOffering)
+								bondOffering.Units_Pending__c += bondBuy.Units__c;
 						}
-						if (validOffering)
+						else if (bondBuy.Status__c == 'Purchased') {
+							if (validOldOffering) {
+								oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
+								bondOfferingMap.put(oldOffering.id, oldOffering);
+							}
+							if (validOffering)
+								bondOffering.Units_Sold__c += bondBuy.Units__c;
+						}
+						if (validOldOffering)
+							bondOfferingMap.put(bondOffering.Id, bondOffering);
+					}
+					else if (unitsChanged && validOffering) {
+						if (bondBuy.Status__c == 'Pending') {
+							bondOffering.Units_Pending__c -= oldBondBuy.Units__c;
 							bondOffering.Units_Pending__c += bondBuy.Units__c;
-					}
-					else if (bondBuy.Status__c == 'Purchased') {
-						if (validOldOffering) {
-							oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
-							bondOfferingMap.put(oldOffering.id, oldOffering);
 						}
-						if (validOffering)
+						else if (bondBuy.Status__c == 'Purchased') {
+							bondOffering.Units_Sold__c -= oldBondBuy.Units__c;
 							bondOffering.Units_Sold__c += bondBuy.Units__c;
-					}
-					if (validOldOffering)
+						}
 						bondOfferingMap.put(bondOffering.Id, bondOffering);
-				}
-				else if (unitsChanged && validOffering) {
-					if (bondBuy.Status__c == 'Pending') {
-						bondOffering.Units_Pending__c -= oldBondBuy.Units__c;
-						bondOffering.Units_Pending__c += bondBuy.Units__c;
 					}
-					else if (bondBuy.Status__c == 'Purchased') {
-						bondOffering.Units_Sold__c -= oldBondBuy.Units__c;
-						bondOffering.Units_Sold__c += bondBuy.Units__c;
-					}
-					bondOfferingMap.put(bondOffering.Id, bondOffering);
 				}
+		    	if (!investorAdded && validInvestor)
+		    		investorMap.put(investor.Id, investor);
 			}
-	    	if (!investorAdded && validInvestor)
-	    		investorMap.put(investor.Id, investor);
+    		catch (Exception ex) {
+    			bondBuyNewMap.get(bondBuy.Id).addError('Error individual');
+    			BondOfferingPageControllerExtension.DMLerrors = true;
+    		}
     	}
-    		
-    	update bondOfferingMap.values();
-    	update investorMap.values();
+    	saveAndHandleErrors(bondOfferingMap.values(), investorMap.values(), bondBuyListIn);
     }
     
-    public void bondBuyAfterDelete(List<Bond_Buy__c> bondBuyListIn) {
+    public void bondBuyAfterDelete(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap) {
     	bondBuyListFilter(bondBuyListIn, null, true);
     	
     	Bond_Offering__c bondOffering = new Bond_Offering__c();
@@ -322,50 +318,54 @@ public with sharing class bondBuyTriggerHandler {
     	Boolean validBondOffering = true;
     	
     	for (Bond_Buy__c bondBuy : bondBuyList) {
-    		
-    		validInvestor = bondBuy.Investor__c != null;
-    		validBondOffering = bondBuy.Bond_Offering__c != null;
-    		
-    		if (validInvestor) {
-    			investor = new Investor__c(Id = bondBuy.Investor__c);
-	    		if (investorMap.containsKey(investor.Id))
-					investor = investorMap.get(investor.Id);
-				else {
-					investor.Bonds_Pitched__c = oldInvestorMap.get(bondBuy.Investor__c).Bonds_Pitched__c;
-					investor.Bonds_Purchased__c = oldInvestorMap.get(bondBuy.Investor__c).Bonds_Purchased__c;
+    		try {
+	    		validInvestor = bondBuy.Investor__c != null;
+	    		validBondOffering = bondBuy.Bond_Offering__c != null;
+	    		
+	    		if (validInvestor) {
+	    			investor = new Investor__c(Id = bondBuy.Investor__c);
+		    		if (investorMap.containsKey(investor.Id))
+						investor = investorMap.get(investor.Id);
+					else {
+						investor.Bonds_Pitched__c = oldInvestorMap.get(bondBuy.Investor__c).Bonds_Pitched__c;
+						investor.Bonds_Purchased__c = oldInvestorMap.get(bondBuy.Investor__c).Bonds_Purchased__c;
+					}
+					investor.Bonds_Pitched__c --;
+	    		}
+				
+				if (validBondOffering) {
+					bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
+					if (bondOfferingMap.containsKey(bondOffering.Id))
+						bondOffering = bondOfferingMap.get(bondOffering.Id);
+					else {
+						bondOffering.Units_Pending__c = oldOfferingMap.get(bondBuy.Bond_Offering__c).Units_Pending__c;
+						bondOffering.Units_Sold__c = oldOfferingMap.get(bondBuy.Bond_Offering__c).Units_Sold__c;
+					}
 				}
-				investor.Bonds_Pitched__c --;
+				
+	    		if (bondBuy.Status__c == 'Pending') {
+	    			if (validBondOffering)
+	    			bondOffering.Units_Pending__c -= bondBuy.Units__c;
+	    		}
+	    		if (bondBuy.Status__c == 'Purchased') {
+	    			if (validBondOffering)
+	    				bondOffering.Units_Sold__c -=  bondBuy.Units__c;
+	    			if (validInvestor)
+	    				investor.Bonds_Purchased__c --;
+	    		}
+	    		
+	    		if (validBondOffering)
+	    			bondOfferingMap.put(bondOffering.Id, bondOffering);	
+	    		if (validInvestor)
+	    			investorMap.put(investor.Id, investor);
     		}
-			
-			if (validBondOffering) {
-				bondOffering = new Bond_Offering__c(Id = bondBuy.Bond_Offering__c);
-				if (bondOfferingMap.containsKey(bondOffering.Id))
-					bondOffering = bondOfferingMap.get(bondOffering.Id);
-				else {
-					bondOffering.Units_Pending__c = oldOfferingMap.get(bondBuy.Bond_Offering__c).Units_Pending__c;
-					bondOffering.Units_Sold__c = oldOfferingMap.get(bondBuy.Bond_Offering__c).Units_Sold__c;
-				}
-			}
-			
-    		if (bondBuy.Status__c == 'Pending') {
-    			if (validBondOffering)
-    			bondOffering.Units_Pending__c -= bondBuy.Units__c;
+    		catch (Exception ex) {
+    			bondBuyOldMap.get(bondBuy.Id).addError('Error individual');
+    			BondOfferingPageControllerExtension.DMLerrors = true;
     		}
-    		if (bondBuy.Status__c == 'Purchased') {
-    			if (validBondOffering)
-    				bondOffering.Units_Sold__c -=  bondBuy.Units__c;
-    			if (validInvestor)
-    				investor.Bonds_Purchased__c --;
-    		}
-    		
-    		if (validBondOffering)
-    			bondOfferingMap.put(bondOffering.Id, bondOffering);	
-    		if (validInvestor)
-    			investorMap.put(investor.Id, investor);
     	}
     	
-    	update bondOfferingMap.values();
-    	update investorMap.values();
+    	saveAndHandleErrors(bondOfferingMap.values(), investorMap.values(), bondBuyListIn);
     }
     
     private void bondBuyListFilter(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap, Boolean isDelete) {
@@ -413,4 +413,53 @@ public with sharing class bondBuyTriggerHandler {
 	    	}
     	}
     }
+    
+    public void saveAndHandleErrors(List<Bond_Offering__c> bondOfferingsForUpdate, List<Investor__c> inverstorsForUpdate, List<Bond_Buy__c> bondBuyListIn) {
+	    try {
+			
+			List<Database.SaveResult> offeringResults = Database.update(bondOfferingsForUpdate, false);
+			Set<Id> wrongOfferings = new Set<Id>();
+			
+			Integer i = 0;
+			for (Database.SaveResult result : offeringResults) {
+				if (!result.isSuccess()) {
+	    			wrongOfferings.add(bondOfferingsForUpdate.get(i).Id);
+				}
+				i++;
+			}
+			
+			List<Database.SaveResult> investorResults = Database.update(inverstorsForUpdate, false);
+			Set<Id> wrongInvestors = new Set<Id>();
+			
+			i = 0;
+			for (Database.SaveResult result : investorResults) {
+				if (!result.isSuccess()) {
+	    			wrongInvestors.add(inverstorsForUpdate.get(i).Id);
+				}
+				i++;
+			}
+			
+			String errorMessage = '';
+			for(Bond_Buy__c bb : bondBuyListIn) {
+				errorMessage = '';
+				if (wrongOfferings.contains(bb.Bond_Offering__c))
+					errorMessage = 'Errors encountered: 1. Error en offering.';
+				if (wrongInvestors.contains(bb.Investor__c))
+					if (errorMessage == '')
+						errorMessage = 'Errors encountered: 1. Error en Investor.';
+					else
+						errorMessage += ' 2. Error en investor.';
+				if (errorMessage != '') {
+					bb.addError(errorMessage);
+					BondOfferingPageControllerExtension.DMLerrors = true;
+				}
+			}
+		}
+		catch (Exception ex) {	
+			for (Bond_Buy__c bb : bondBuyListIn) {
+				bb.addError('ERROR GENERAL');
+				BondOfferingPageControllerExtension.DMLerrors = true;
+			}
+		}
+	}
 }

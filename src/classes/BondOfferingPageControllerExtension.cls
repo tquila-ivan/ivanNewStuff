@@ -64,6 +64,7 @@ public with sharing class BondOfferingPageControllerExtension {
 	public Integer pageNumber {get;set;}
 	public Integer pageSize = 5;
 	public Integer investorCount {get;set;}
+	public Integer investorCountOver {get;set;}
 	public Integer totalPages {
 		get {
 			if (investorCount == 0)
@@ -88,6 +89,20 @@ public with sharing class BondOfferingPageControllerExtension {
 	private ApexPages.StandardController controller;
 	public ApexPages.StandardSetController investorSetController {get;set;}
 	
+	public static Boolean DMLerrors {
+    	get {
+    		if (DMLerrors == null)
+    			DMLerrors = false;
+    		return DMLerrors;
+    	}
+		set;
+    }
+    
+    public Integer queryLocatorLimit {
+    	get {
+    		return Limits.getLimitQueryLocatorRows();
+    	}
+    }
 	public BondOfferingPageControllerExtension(ApexPages.StandardController stdController) {
         controller = stdController;
         bondOffering = (Bond_Offering__c)stdController.getRecord();
@@ -226,9 +241,9 @@ public with sharing class BondOfferingPageControllerExtension {
 				tempWrapper = wrappersChanged.get(tempInvestor.Id);
 			else {
 				if (tempInvestor.Bond_Buys__r == null || tempInvestor.Bond_Buys__r.isEmpty())
-					tempWrapper = new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = tempInvestor.Default_Bond_Units__c, Investor__r = tempInvestor, Investor__c = tempInvestor.Id), false);
+					tempWrapper = new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = tempInvestor.Default_Bond_Units__c, Investor__r = tempInvestor, Investor__c = tempInvestor.Id), false, true);
 				else
-					tempWrapper = new bondBuySelectionWrapper(tempInvestor.Bond_Buys__r[0], true);
+					tempWrapper = new bondBuySelectionWrapper(tempInvestor.Bond_Buys__r[0], true, false);
 			}
 			bondBuyWrapsToDisplay.add(tempWrapper);
 		}
@@ -243,7 +258,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		if (selectedFilter != '--Any type--' && !String.isBlank(selectedFilter))
 			whereClause += 'where Type__c = :selectedFilter';
 		
-		soqlQueryInvestors += ' from Investor__c ' + whereClause + ' order by Name Asc';
+		soqlQueryInvestors += ' from Investor__c ' + whereClause + ' order by Name Asc limit ' + String.valueOf(queryLocatorLimit);
 
 		try {
 			investorSetController = new ApexPages.StandardSetController(Database.getQueryLocator(soqlQueryInvestors));
@@ -255,6 +270,10 @@ public with sharing class BondOfferingPageControllerExtension {
 			tempInvestors = investorSetController.getRecords();
 			bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
 			investorCount = investorSetController.getResultSize();
+			if (investorCount == queryLocatorLimit)
+				investorCountOver = Database.countQuery('Select count() from Investor__c ' + whereClause);
+			else
+				investorCountOver = investorCount;
 			processBondBuyWrappersToDisplay(tempInvestors);
 		}
 		catch (Exception ex) {
@@ -280,7 +299,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		PageReference result = new PageReference('/' + bondOffering.Id);
 		Id newOfferId = bondOffering.Id;
 		Set<Id> relatedBondBuys = saveBondBuys(newOfferId);
-		if (errorShown) {
+		if (errorShown || DMLerrors) {
 			Database.rollback(sp);
 			rollBackWrappers(relatedBondBuys);
 			if (isNewOffering) {
@@ -333,7 +352,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 		
 		try {
-			insert bondBuyListToInsert;
+			insert bondBuyListToInsert ;
 		}
 		catch (Exception ex) {
 			errorShown = true;
@@ -343,10 +362,13 @@ public with sharing class BondOfferingPageControllerExtension {
 	}
 	
 	private void rollBackWrappers(Set<Id> relatedBondBuys) {
+		Bond_Buy__c tempBondBuy;
 		Map<Id, Bond_Buy__c> bondBuysMap = new Map<Id, Bond_Buy__c>([Select Units__c from Bond_Buy__c where Id in :relatedBondBuys]);
 		for (bondBuySelectionWrapper wrapper : wrappersChanged.values()) {
-			if (wrapper.bondBuy.Id == null)
-				wrapper.bondBuy.Status__c = 'New';
+			if (wrapper.bondBuy.Id == null || wrapper.isNew) {
+				tempBondBuy = new Bond_Buy__c(Status__c = 'New', Units__c = Double.valueOf(wrapper.units), Investor__r = wrapper.bondBuy.Investor__r, Investor__c = wrapper.bondBuy.Investor__c);
+				wrapper.bondBuy = tempBondBuy;
+			}
 			else {
 				if (bondBuysMap.containsKey(wrapper.bondBuy.Id))
 					wrapper.bondBuy.Units__c = bondBuysMap.get(wrapper.bondBuy.Id).Units__c;
@@ -400,9 +422,12 @@ public with sharing class BondOfferingPageControllerExtension {
 			}
 		}
 		
-		public bondBuySelectionWrapper (Bond_Buy__c bondBuyIn, Boolean selectedIn) {
+		public Boolean isNew {get;set;}
+		
+		public bondBuySelectionWrapper (Bond_Buy__c bondBuyIn, Boolean selectedIn, Boolean isNewIn) {
 			bondBuy = bondBuyIn;
 			selected = selectedIn;
+			isNew = isNewIn;
 		}
 		
 		public Integer compareTo(Object compareTo) {

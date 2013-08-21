@@ -9,7 +9,7 @@
 		  		<apex:actionStatus id="saveStatus">
 					<apex:facet name="stop">
 						<apex:outputPanel >
-							<apex:commandButton action="{!save}" value="Save" rerender="saveStatus, mainBlock" status="saveStatus" disabled="{!tooManyPending}"/>
+							<apex:commandButton action="{!save}" value="Save" rerender="saveStatus, mainBlock" status="saveStatus"/>
 							<apex:commandButton action="{!cancel}" value="Cancel" rerender="saveStatus, mainBlock" status="saveStatus"/>	
 						</apex:outputPanel>
 					</apex:facet>
@@ -33,7 +33,7 @@
 				<apex:outputText value="{!unitsSold}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Sold__c.Label}"/>
 				<apex:outputText value="{!unitsAvailable}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Remaining__c.Label}"/>
 				<apex:outputText value="{!unitsPending}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Pending__c.Label}"/>
-				<apex:pageMessage severity="FATAL" title="Error:" summary="Too many pending units, they can't be greater than two times the remaining units. The save button is disabled because of this. Fix the errors and move page or filter again to update statistics in order enable it again (if the error is solved)." rendered="{!tooManyPending}"/>
+				<apex:pageMessage severity="FATAL" title="Error:" summary="Too many pending units, they can't be greater than two times the remaining units." rendered="{!tooManyPending}"/>
 			</apex:pageBlockSection>
 			
 			<apex:actionRegion >
@@ -42,7 +42,14 @@
 	            		<apex:selectOptions value="{!investorTypeFilter}"/>
 	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" event="onchange" status="refreshBondBuyStatus"/>
 					</apex:selectList>
-					<apex:actionStatus startText=" (filtering...)" stopText="Displaying {!bondBuyWrapsToDisplay.size} record(s) from a total of {!investorCount}." id="refreshBondBuyStatus" />
+					<apex:actionStatus startText=" (filtering...)" id="refreshBondBuyStatus">
+						<apex:facet name="stop">
+							<apex:outputPanel >
+								<apex:outputText value="Displaying {!bondBuyWrapsToDisplay.size} record(s) from a total of {!investorCount}." />
+								<apex:pageMessage severity="WARNING" title="Warning:" summary="There are {!investorCountOver} investors in the database, these page only gets the first {!queryLocatorLimit} ordered by Name" rendered="{!investorCountOver > queryLocatorLimit}"/>
+							</apex:outputPanel>
+						</apex:facet>
+					</apex:actionStatus>
 			        <apex:outputPanel id="bondBuysPanel" >
 			       		<apex:pageMessages id="mess" rendered="{!errorShown}"/>
 				        <apex:pageBlockTable value="{!bondBuyWrapsToDisplay}" var="bondBuyWrap" id="bondBuyTable">
