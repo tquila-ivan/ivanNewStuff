@@ -8,11 +8,19 @@ public with sharing class bondBuyTriggerHandler {
     
     private Map<Id,Investor__c> investorMap = new Map<Id,Investor__c>();
     private Map<Id, Bond_Offering__c> bondOfferingMap = new Map<Id, Bond_Offering__c>();
+    private String bondOfferingLabel = Bond_Offering__c.sObjectType.getDescribe().getLabel();
+    private String investorLabel = Investor__c.sObjectType.getDescribe().getLabel();
+    private String bondBuyLabel = Bond_Buy__c.sObjectType.getDescribe().getLabel();
     
     // CONSTRUCTOR
     public bondBuyTriggerHandler(Boolean isExecuting, Integer size){
         isExecuting = isExecuting;
         BatchSize = size;
+    }
+    
+    //BEFORE INSERT
+    public void bondBuyBeforeInsert(List<Bond_Buy__c> bondBuyListIn) {
+    	checkValidBeforeRelatedRecords(bondBuyListIn);
     }
     
     //AFTER INSERT - UNDELETE
@@ -53,11 +61,11 @@ public with sharing class bondBuyTriggerHandler {
 					}
 				}
 	    		
-	    		if (bondBuy.Status__c == 'Pending') {
+	    		if (bondBuy.Status__c == Label.PendingStatus) {
 	    			if (validBondOffering)
 	    				bondOffering.Units_Pending__c += bondBuy.Units__c;
 	    		}
-	    		if (bondBuy.Status__c == 'Purchased') {
+	    		if (bondBuy.Status__c == Label.PurchasedStatus) {
 	    			if (validBondOffering)
 	    				bondOffering.Units_Sold__c +=  bondBuy.Units__c;
 	    			if (validInvestor)
@@ -70,7 +78,7 @@ public with sharing class bondBuyTriggerHandler {
 	    			investorMap.put(investor.Id, investor);
     		}
     		catch (Exception ex) {
-    			bondBuyNewMap.get(bondBuy.Id).addError('Error individual');
+    			bondBuyNewMap.get(bondBuy.Id).addError(Label.IndividualError);
     			BondOfferingPageControllerExtension.DMLerrors = true;
     		}
     	}
@@ -78,6 +86,12 @@ public with sharing class bondBuyTriggerHandler {
 		saveAndHandleErrors(bondOfferingMap.values(), investorMap.values(), bondBuyListIn);
     }
     
+    //BEFORE UPDATE
+    public void bondBuyBeforeUpdate(List<Bond_Buy__c> bondBuyListIn) {
+    	checkValidBeforeRelatedRecords(bondBuyListIn);
+    }
+    
+    //AFTER UPDATE
     public void bondBuyAfterUpdate(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap, Map<Id, Bond_Buy__c> bondBuyNewMap) {
     	
     	bondBuyListFilter(bondBuyListIn, bondBuyOldMap, false);
@@ -148,21 +162,21 @@ public with sharing class bondBuyTriggerHandler {
 				if (investorChanged) {
 					if (validOldInvestor) {
 						oldInvestor.Bonds_Pitched__c = oldInvestor.Bonds_Pitched__c - 1;
-						if (oldBondBuy.Status__c == 'Purchased')
+						if (oldBondBuy.Status__c == Label.PurchasedStatus)
 							oldInvestor.Bonds_Purchased__c = oldInvestor.Bonds_Purchased__c - 1;
 						investorMap.put(oldInvestor.Id, oldInvestor);
 					}
 					
 					if (validInvestor) {
 						investor.Bonds_Pitched__c = investor.Bonds_Pitched__c + 1;
-						if (bondBuy.Status__c == 'Purchased')
+						if (bondBuy.Status__c == Label.PurchasedStatus)
 							investor.Bonds_Purchased__c = investor.Bonds_Purchased__c + 1;
 					}
 				}
 				
 				if (statusChanged) {
-					if (oldBondBuy.Status__c == 'Pending') {
-			    		if (bondBuy.Status__c == 'Passed') {
+					if (oldBondBuy.Status__c == Label.PendingStatus) {
+			    		if (bondBuy.Status__c == Label.PassedStatus) {
 			    			if (offeringChanged) {
 			    				if (validOldOffering) {
 				    				oldOffering.Units_Pending__c = oldOffering.Units_Pending__c - oldBondBuy.Units__c;
@@ -176,7 +190,7 @@ public with sharing class bondBuyTriggerHandler {
 			    				}
 			    			}
 			    		}
-			    		else if (bondBuy.Status__c == 'Purchased') {
+			    		else if (bondBuy.Status__c == Label.PurchasedStatus) {
 			    			if (!investorChanged && validInvestor) {
 				    			investor.Bonds_Purchased__c ++;
 				    			investorMap.put(investor.Id, investor);
@@ -200,14 +214,14 @@ public with sharing class bondBuyTriggerHandler {
 			    			}
 			    		}
 					}
-					else if (oldBondBuy.Status__c == 'Passed') {
-						if (bondBuy.Status__c == 'Pending') {
+					else if (oldBondBuy.Status__c == Label.PassedStatus) {
+						if (bondBuy.Status__c == Label.PendingStatus) {
 							if (validOffering) {
 								bondOffering.Units_Pending__c += bondBuy.Units__c;
 								bondOfferingMap.put(bondOffering.Id, bondOffering);
 							}
 						}
-			    		else if (bondBuy.Status__c == 'Purchased') {
+			    		else if (bondBuy.Status__c == Label.PurchasedStatus) {
 			    			
 			    			if (!investorChanged && validInvestor) {
 			    				investor.Bonds_Purchased__c ++;
@@ -221,14 +235,14 @@ public with sharing class bondBuyTriggerHandler {
 			    			}
 			    		}
 					}
-					else if (oldBondBuy.Status__c == 'Purchased') {
+					else if (oldBondBuy.Status__c == Label.PurchasedStatus) {
 						if (!investorChanged && validInvestor) {
 							investor.Bonds_Purchased__c --;
 				    		investorMap.put(investor.Id, investor);
 				    		investorAdded = true;
 						}
 			    		
-						if (bondBuy.Status__c == 'Pending') {
+						if (bondBuy.Status__c == Label.PendingStatus) {
 							
 							if (offeringChanged) {
 								if (validOldOffering) {
@@ -246,7 +260,7 @@ public with sharing class bondBuyTriggerHandler {
 								bondOfferingMap.put(bondOffering.Id, bondOffering);
 							}
 						}
-						else if (bondBuy.Status__c == 'Passed') {
+						else if (bondBuy.Status__c == Label.PassedStatus) {
 							if (offeringChanged) {
 								if (validOldOffering) {
 									oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
@@ -264,7 +278,7 @@ public with sharing class bondBuyTriggerHandler {
 				}
 				else {
 					if (offeringChanged) {
-						if (bondBuy.Status__c == 'Pending') {
+						if (bondBuy.Status__c == Label.PendingStatus) {
 							if (validOldOffering) {
 								oldOffering.Units_Pending__c -= oldBondBuy.Units__c;
 								bondOfferingMap.put(oldOffering.id, oldOffering);
@@ -272,7 +286,7 @@ public with sharing class bondBuyTriggerHandler {
 							if (validOffering)
 								bondOffering.Units_Pending__c += bondBuy.Units__c;
 						}
-						else if (bondBuy.Status__c == 'Purchased') {
+						else if (bondBuy.Status__c == Label.PurchasedStatus) {
 							if (validOldOffering) {
 								oldOffering.Units_Sold__c -= oldBondBuy.Units__c;
 								bondOfferingMap.put(oldOffering.id, oldOffering);
@@ -284,11 +298,11 @@ public with sharing class bondBuyTriggerHandler {
 							bondOfferingMap.put(bondOffering.Id, bondOffering);
 					}
 					else if (unitsChanged && validOffering) {
-						if (bondBuy.Status__c == 'Pending') {
+						if (bondBuy.Status__c == Label.PendingStatus) {
 							bondOffering.Units_Pending__c -= oldBondBuy.Units__c;
 							bondOffering.Units_Pending__c += bondBuy.Units__c;
 						}
-						else if (bondBuy.Status__c == 'Purchased') {
+						else if (bondBuy.Status__c == Label.PurchasedStatus) {
 							bondOffering.Units_Sold__c -= oldBondBuy.Units__c;
 							bondOffering.Units_Sold__c += bondBuy.Units__c;
 						}
@@ -299,13 +313,14 @@ public with sharing class bondBuyTriggerHandler {
 		    		investorMap.put(investor.Id, investor);
 			}
     		catch (Exception ex) {
-    			bondBuyNewMap.get(bondBuy.Id).addError('Error individual');
+    			bondBuyNewMap.get(bondBuy.Id).addError(Label.IndividualError);
     			BondOfferingPageControllerExtension.DMLerrors = true;
     		}
     	}
     	saveAndHandleErrors(bondOfferingMap.values(), investorMap.values(), bondBuyListIn);
     }
     
+    //AFTER DELETE
     public void bondBuyAfterDelete(List<Bond_Buy__c> bondBuyListIn, Map<Id, Bond_Buy__c> bondBuyOldMap) {
     	bondBuyListFilter(bondBuyListIn, null, true);
     	
@@ -343,11 +358,11 @@ public with sharing class bondBuyTriggerHandler {
 					}
 				}
 				
-	    		if (bondBuy.Status__c == 'Pending') {
+	    		if (bondBuy.Status__c == Label.PendingStatus) {
 	    			if (validBondOffering)
 	    			bondOffering.Units_Pending__c -= bondBuy.Units__c;
 	    		}
-	    		if (bondBuy.Status__c == 'Purchased') {
+	    		if (bondBuy.Status__c == Label.PurchasedStatus) {
 	    			if (validBondOffering)
 	    				bondOffering.Units_Sold__c -=  bondBuy.Units__c;
 	    			if (validInvestor)
@@ -360,7 +375,7 @@ public with sharing class bondBuyTriggerHandler {
 	    			investorMap.put(investor.Id, investor);
     		}
     		catch (Exception ex) {
-    			bondBuyOldMap.get(bondBuy.Id).addError('Error individual');
+    			bondBuyOldMap.get(bondBuy.Id).addError(Label.IndividualError);
     			BondOfferingPageControllerExtension.DMLerrors = true;
     		}
     	}
@@ -416,39 +431,24 @@ public with sharing class bondBuyTriggerHandler {
     
     public void saveAndHandleErrors(List<Bond_Offering__c> bondOfferingsForUpdate, List<Investor__c> inverstorsForUpdate, List<Bond_Buy__c> bondBuyListIn) {
 	    try {
+			Map<Id, String> wrongObjectsErrorMap = new Map<Id, String>();
 			
 			List<Database.SaveResult> offeringResults = Database.update(bondOfferingsForUpdate, false);
-			Set<Id> wrongOfferings = new Set<Id>();
-			
-			Integer i = 0;
-			for (Database.SaveResult result : offeringResults) {
-				if (!result.isSuccess()) {
-	    			wrongOfferings.add(bondOfferingsForUpdate.get(i).Id);
-				}
-				i++;
-			}
+			processDatabaseSaveResults(wrongObjectsErrorMap, bondOfferingsForUpdate, offeringResults, bondOfferingLabel);
 			
 			List<Database.SaveResult> investorResults = Database.update(inverstorsForUpdate, false);
-			Set<Id> wrongInvestors = new Set<Id>();
-			
-			i = 0;
-			for (Database.SaveResult result : investorResults) {
-				if (!result.isSuccess()) {
-	    			wrongInvestors.add(inverstorsForUpdate.get(i).Id);
-				}
-				i++;
-			}
+			processDatabaseSaveResults(wrongObjectsErrorMap, inverstorsForUpdate, investorResults, investorLabel);
 			
 			String errorMessage = '';
 			for(Bond_Buy__c bb : bondBuyListIn) {
 				errorMessage = '';
-				if (wrongOfferings.contains(bb.Bond_Offering__c))
-					errorMessage = 'Errors encountered: 1. Error en offering.';
-				if (wrongInvestors.contains(bb.Investor__c))
-					if (errorMessage == '')
-						errorMessage = 'Errors encountered: 1. Error en Investor.';
+				if (wrongObjectsErrorMap.containsKey(bb.Bond_Offering__c))
+					errorMessage = String.format(Label.ErrorEncounteredMessage, new List<String>{bondOfferingLabel,wrongObjectsErrorMap.get(bb.Bond_Offering__c)});
+				if (wrongObjectsErrorMap.containsKey(bb.Investor__c))
+					if (errorMessage != '')
+						errorMessage += ' --- ' + String.format(Label.ErrorEncounteredMessage, new List<String>{investorLabel, wrongObjectsErrorMap.get(bb.Investor__c)});
 					else
-						errorMessage += ' 2. Error en investor.';
+						errorMessage = String.format(Label.ErrorEncounteredMessage, new List<String>{investorLabel, wrongObjectsErrorMap.get(bb.Investor__c)});
 				if (errorMessage != '') {
 					bb.addError(errorMessage);
 					BondOfferingPageControllerExtension.DMLerrors = true;
@@ -457,9 +457,49 @@ public with sharing class bondBuyTriggerHandler {
 		}
 		catch (Exception ex) {	
 			for (Bond_Buy__c bb : bondBuyListIn) {
-				bb.addError('ERROR GENERAL');
+				bb.addError(String.format(Label.UpdateGeneralError, new List<String>{bondOfferingLabel, investorLabel, bondBuyLabel}));
 				BondOfferingPageControllerExtension.DMLerrors = true;
 			}
 		}
 	}
+	
+	private void processDatabaseSaveResults(Map<Id, String> wrongObjectsErrorMap, List<sObject> sObjectForUpdate, List<Database.SaveResult> saveResults, String sObjectLabel) {
+		Integer i = 0;
+		String tempError = '';
+		for (Database.SaveResult result : saveResults) {
+			if (!result.isSuccess()) {
+				for (Database.Error error : result.getErrors()) {
+					if (error.getStatusCode() == StatusCode.FIELD_CUSTOM_VALIDATION_EXCEPTION)
+						tempError = error.getMessage();
+				}
+				if (String.isBlank(tempError))
+					tempError = String.format(Label.NotCustomValidationError, new List<String>{sObjectLabel, bondBuyLabel});
+    			wrongObjectsErrorMap.put(sObjectForUpdate.get(i).Id, tempError);
+			}
+			i++;
+		}
+	}
+	
+	public void checkValidBeforeRelatedRecords(List<Bond_Buy__c> bondBuyListIn) {
+    	Set<Id> offeringIds = new Set<Id>();
+    	Set<Id> investorIds = new Set<Id>();
+    	for (Bond_Buy__c bondBuy : bondBuyListIn) {
+    		if (bondBuy.Bond_Offering__c != null)
+    			offeringIds.add(bondBuy.Bond_Offering__c);
+    		if (bondBuy.Investor__c != null)
+    			investorIds.add(bondBuy.Investor__c);
+    	}
+    	
+    	Map<Id, Bond_Offering__c> validOfferingsMap = new Map<Id, Bond_Offering__c>([Select Id from Bond_Offering__c where Id in :offeringIds]);
+    	Map<Id, Investor__c> validInvestorsMap = new Map<Id, Investor__c>([Select Id from Investor__c where Id in :investorIds]);
+    	
+    	for (Bond_Buy__c bondBuy : bondBuyListIn) {
+    		if(bondBuy.Bond_Offering__c != null)
+	    		if (!validOfferingsMap.containsKey(bondBuy.Bond_Offering__c))
+	    			bondBuy.addError(String.format(Label.InvalidIdIntroduced, new List<String>{bondOfferingLabel}));
+	    	if(bondBuy.Investor__c != null)
+	    		if (!validInvestorsMap.containsKey(bondBuy.Investor__c))
+	    			bondBuy.addError(String.format(Label.InvalidIdIntroduced, new List<String>{investorLabel}));
+    	}
+    }
 }

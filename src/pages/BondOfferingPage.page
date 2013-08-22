@@ -1,52 +1,52 @@
-<apex:page standardController="Bond_Offering__c" extensions="BondOfferingPageControllerExtension">
+<apex:page standardController="Bond_Offering__c" extensions="BondOfferingPageControllerExtension" title="{!bondOfferingBuilderLabel}">
 
-	<apex:sectionHeader title="Bond Offering" subtitle="{!subTitle}"/>
+	<apex:sectionHeader title="{!$ObjectType.Bond_Offering__c.Label}" subtitle="{!subTitle}"/>
 	
 	<apex:form id="mainForm">
-		<apex:pageBlock id="mainBlock" title="Bond Offering Builder">
+		<apex:pageBlock id="mainBlock" title="{!bondOfferingBuilderLabel}">
 			
 		  	<apex:pageBlockButtons location="top">
 		  		<apex:actionStatus id="saveStatus">
 					<apex:facet name="stop">
 						<apex:outputPanel >
-							<apex:commandButton action="{!save}" value="Save" rerender="saveStatus, mainBlock" status="saveStatus"/>
-							<apex:commandButton action="{!cancel}" value="Cancel" rerender="saveStatus, mainBlock" status="saveStatus"/>	
+							<apex:commandButton action="{!save}" value="{!$Label.site.save}" rerender="saveStatus, mainBlock" status="saveStatus"/>
+							<apex:commandButton action="{!cancel}" value="{!$Label.site.cancel}" rerender="saveStatus, mainBlock" status="saveStatus"/>	
 						</apex:outputPanel>
 					</apex:facet>
 					<apex:facet name="start">
 						<apex:outputPanel >
-							<apex:commandButton action="{!save}" value="Save" disabled="true" status="saveStatus"/>
-							<apex:commandButton action="{!cancel}" value="Cancel" disabled="true" status="saveStatus"/>	
+							<apex:commandButton action="{!save}" value="{!$Label.site.save}" disabled="true" status="saveStatus"/>
+							<apex:commandButton action="{!cancel}" value="{!$Label.site.cancel}" disabled="true" status="saveStatus"/>	
 						</apex:outputPanel>
 					</apex:facet>
 				</apex:actionStatus>		
 			</apex:pageBlockButtons>
 			
-			<apex:pageBlockSection id="offeringDetails" title="Bond Offering Details" collapsible="false">
+			<apex:pageBlockSection id="offeringDetails" title="{!bondOfferingDetailsLabel}" collapsible="false">
 				<apex:inputField value="{!Bond_Offering__c.Name}" required="true"/>
 				<apex:inputField value="{!Bond_Offering__c.Client__c}" required="true"/>
 				<apex:inputField value="{!Bond_Offering__c.Sales_Rep__c}" required="true"/>
 				<apex:inputField value="{!Bond_Offering__c.Interest_Rate__c}" required="true"/>
 			</apex:pageBlockSection>
 			
-			<apex:pageBlockSection id="offeringStats" title="Bond Offering Progress" columns="1" collapsible="false">
+			<apex:pageBlockSection id="offeringStats" title="{!bondOfferingProgressLabel}" columns="1" collapsible="false">
 				<apex:outputText value="{!unitsSold}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Sold__c.Label}"/>
 				<apex:outputText value="{!unitsAvailable}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Remaining__c.Label}"/>
 				<apex:outputText value="{!unitsPending}" label="{!$ObjectType.Bond_Offering__c.fields.Units_Pending__c.Label}"/>
-				<apex:pageMessage severity="FATAL" title="Error:" summary="Too many pending units, they can't be greater than two times the remaining units." rendered="{!tooManyPending}"/>
+				<apex:pageMessage severity="ERROR" title="{!$Label.ErrorTitle}" summary="{!$Label.TooManyPendingUnits}" rendered="{!tooManyPending}"/>
 			</apex:pageBlockSection>
 			
 			<apex:actionRegion >
-				<apex:pageBlockSection id="bondBuys" title="Bond Buys" columns="1" collapsible="false">
-			        <apex:selectList value="{!selectedFilter}" size="1" label="Investor Type Filter" id="selectList">
+				<apex:pageBlockSection id="bondBuys" title="{!$ObjectType.Bond_Buy__c.LabelPlural}" columns="1" collapsible="false">
+			        <apex:selectList value="{!selectedFilter}" size="1" label="{!investorTypeFilterLabel}" id="selectList">
 	            		<apex:selectOptions value="{!investorTypeFilter}"/>
 	            		<apex:actionSupport action="{!refreshBondBuys}" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" event="onchange" status="refreshBondBuyStatus"/>
 					</apex:selectList>
-					<apex:actionStatus startText=" (filtering...)" id="refreshBondBuyStatus">
+					<apex:actionStatus startText="{!$Label.WorkingMessage}" id="refreshBondBuyStatus">
 						<apex:facet name="stop">
 							<apex:outputPanel >
-								<apex:outputText value="Displaying {!bondBuyWrapsToDisplay.size} record(s) from a total of {!investorCount}." />
-								<apex:pageMessage severity="WARNING" title="Warning:" summary="There are {!investorCountOver} investors in the database, these page only gets the first {!queryLocatorLimit} ordered by Name" rendered="{!investorCountOver > queryLocatorLimit}"/>
+								<apex:outputText value="{!displayingRecordsMessage}" />
+								<apex:pageMessage severity="WARNING" title="{!$Label.WarningTitle}" summary="{!tooManyInvestorsWarning}" rendered="{!investorCountOver > queryLocatorLimit}"/>
 							</apex:outputPanel>
 						</apex:facet>
 					</apex:actionStatus>
@@ -54,12 +54,12 @@
 			       		<apex:pageMessages id="mess" rendered="{!errorShown}"/>
 				        <apex:pageBlockTable value="{!bondBuyWrapsToDisplay}" var="bondBuyWrap" id="bondBuyTable">
 							<apex:column width="5%">
-								<apex:facet name="header">Select</apex:facet>
+								<apex:facet name="header">{!$Label.SelectHeader}</apex:facet>
 								<apex:inputCheckbox value="{!bondBuyWrap.selected}" rendered="{!(!bondBuyWrap.readOnly)}"/>
 								<apex:inputCheckbox value="{!bondBuyWrap.selected}" disabled="true" rendered="{!bondBuyWrap.readOnly}"/>
 							</apex:column>
 							<apex:column width="15%">
-								<apex:facet name="header">Units</apex:facet>
+								<apex:facet name="header">{!$ObjectType.Bond_Buy__c.fields.Units__c.Label}</apex:facet>
 								<apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!(!bondBuyWrap.readOnly)}">
 									<apex:outputPanel styleClass="requiredBlock" layout="block"/>
 									<apex:inputText value="{!bondBuyWrap.units}"/>
@@ -67,15 +67,15 @@
 								<apex:outputText value="{!bondBuyWrap.units}" rendered="{!bondBuyWrap.readOnly}"/>
 							</apex:column>
 							<apex:column width="10%">
-								<apex:facet name="header">Status</apex:facet>
+								<apex:facet name="header">{!$ObjectType.Bond_Buy__c.fields.Status__c.Label}</apex:facet>
 								<apex:outputText value="{!bondBuyWrap.bondBuy.Status__c}"/>
 							</apex:column>
 							<apex:column width="40%">
-								<apex:facet name="header">Investor Name</apex:facet>
+								<apex:facet name="header">{!$ObjectType.Investor__c.fields.Name.Label}</apex:facet>
 								<apex:outputText value="{!bondBuyWrap.bondBuy.Investor__r.Name}"/>
 							</apex:column>
 							<apex:column width="30%">
-								<apex:facet name="header">Type</apex:facet>
+								<apex:facet name="header">{!$ObjectType.Investor__c.fields.Type__c.Label}</apex:facet>
 								<apex:outputText value="{!bondBuyWrap.bondBuy.Investor__r.Type__c}"/>
 							</apex:column>
 						</apex:pageBlockTable>	
@@ -87,22 +87,22 @@
 							<apex:facet name="stop">
 								<apex:outputPanel >
 								<center>
-									<apex:commandButton action="{!firstPage}" value="|< First" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 1}"/>
-									<apex:commandButton action="{!previousPage}" value="< Previous" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 1}"/>
-									<apex:outputText value="Page {!pageNumber} of {!totalPages}"/>
-									<apex:commandButton action="{!nextPage}" value="Next >" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == pageNumber}"/>
-									<apex:commandButton action="{!lastPage}" value="Last >|" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == pageNumber}"/>
+									<apex:commandButton action="{!firstPage}" value="{!$Label.goToFirst}" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 1}"/>
+									<apex:commandButton action="{!previousPage}" value="{!$Label.goToPrevious}" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!pageNumber == 1}"/>
+									<apex:outputText value="{!pageNumberOfTotalLabel}"/>
+									<apex:commandButton action="{!nextPage}" value="{!$Label.goToNext}" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == pageNumber}"/>
+									<apex:commandButton action="{!lastPage}" value="{!$Label.goToLast}" rerender="saveStatus, offeringStats, selectList, bondBuysPanel, refreshBondBuyStatus, pagination, mess" status="paginationStatus" disabled="{!totalPages == pageNumber}"/>
 								</center>
 								</apex:outputPanel>
 							</apex:facet>
 							<apex:facet name="start">
 								<apex:outputPanel >
 									<center>	
-										<apex:commandButton action="{!refreshBondBuys}" value="Working..." status="paginationStatus" disabled="true"/>
-										<apex:commandButton action="{!previousPage}" value="Working..." status="paginationStatus" disabled="true"/>
-										<apex:outputText value="Working..."/>
-										<apex:commandButton action="{!nextPage}" value="Working..." status="paginationStatus" disabled="true"/>
-										<apex:commandButton action="{!lastPage}" value="Working..." status="paginationStatus" disabled="true"/>
+										<apex:commandButton action="{!refreshBondBuys}" value="{!$Label.WorkingMessage}" status="paginationStatus" disabled="true"/>
+										<apex:commandButton action="{!previousPage}" value="{!$Label.WorkingMessage}" status="paginationStatus" disabled="true"/>
+										<apex:outputText value="{!$Label.WorkingMessage}"/>
+										<apex:commandButton action="{!nextPage}" value="{!$Label.WorkingMessage}" status="paginationStatus" disabled="true"/>
+										<apex:commandButton action="{!lastPage}" value="{!$Label.WorkingMessage}" status="paginationStatus" disabled="true"/>
 									</center>
 								</apex:outputPanel>
 							</apex:facet>

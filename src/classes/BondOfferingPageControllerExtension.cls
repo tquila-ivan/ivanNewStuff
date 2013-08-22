@@ -1,16 +1,15 @@
 public with sharing class BondOfferingPageControllerExtension {
 	
+	//Main bond offering object
 	private Bond_Offering__c bondOffering;
-	public String subTitle {
-		get {
-			if (bondOffering.Id == null)
-				subtitle = 'New Bond Offering';
-			else
-				subtitle = bondOffering.Name;
-			return subtitle;
-		}
-		private set;
-	}
+	
+	//Describes to get object labels
+	private String bondOfferingLabel = Bond_Offering__c.sObjectType.getDescribe().getLabel();
+    private String investorLabel = Investor__c.sObjectType.getDescribe().getLabel();
+    private String investorPluralLabel = Investor__c.sObjectType.getDescribe().getLabelPlural();
+    private String bondBuyLabel = Bond_Buy__c.sObjectType.getDescribe().getLabel();
+	
+	//Units related properties
 	public Integer unitsAvailable {
 		get {
 			if (unitsAvailable == null)
@@ -48,23 +47,26 @@ public with sharing class BondOfferingPageControllerExtension {
 			return unitsPending > unitsAvailable * 2;
 		}
 	}
+	
+	//Filter properties
 	public String selectedFilter {
 		get;
 		set {
 			if (String.isBlank(selectedFilter))
-				previousSelectedFilter = '--Any Type--';
+				previousSelectedFilter = Label.InvestorTypeFilterDefault;
 			previousSelectedFilter = selectedFilter;
 			selectedFilter = value;
 		}
 	}
 	public String previousSelectedFilter {get;set;}
 	
+	//Wrappers to display and wrappers to manage changes
 	public List<bondBuySelectionWrapper> bondBuyWrapsToDisplay {get;private set;}
 	private Map<Id,bondBuySelectionWrapper> wrappersChanged = new Map<Id,bondBuySelectionWrapper>();
+	
+	//Pagination properties
 	public Integer pageNumber {get;set;}
 	public Integer pageSize = 5;
-	public Integer investorCount {get;set;}
-	public Integer investorCountOver {get;set;}
 	public Integer totalPages {
 		get {
 			if (investorCount == 0)
@@ -76,6 +78,10 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 		private set;
 	}
+	public Integer investorCount {get;set;}
+	public Integer investorCountOver {get;set;}
+	
+	//Booleans for managing page
 	public boolean errorShown {
 		get {
 			if (errorShown == null)
@@ -84,11 +90,13 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 		set;
 	}
-	public String filterValue {get;set;}
 	private Boolean isNewOffering = true;
+	
+	//Controllers
 	private ApexPages.StandardController controller;
 	public ApexPages.StandardSetController investorSetController {get;set;}
 	
+	//Static variable shared by trigger
 	public static Boolean DMLerrors {
     	get {
     		if (DMLerrors == null)
@@ -98,11 +106,61 @@ public with sharing class BondOfferingPageControllerExtension {
 		set;
     }
     
+    //Limits
     public Integer queryLocatorLimit {
     	get {
     		return Limits.getLimitQueryLocatorRows();
     	}
     }
+    
+    //Labels
+    public String displayingRecordsMessage {
+    	get {
+    		return String.format(Label.DisplayingRecordsMessage, new List<String>{String.valueOf(bondBuyWrapsToDisplay.size()), String.valueOf(investorCount)});
+    	}
+    }
+    public String tooManyInvestorsWarning {
+    	get {
+    		return String.format(Label.TooManyInvestorsWarning, new List<String>{String.valueOf(investorCountOver), investorPluralLabel, String.valueOf(queryLocatorLimit)});
+    	}
+    }
+    public String pageNumberOfTotalLabel {
+    	get {
+    		return String.format(Label.pageNumberOfTotal, new List<String>{String.valueOf(pageNumber), String.valueOf(totalPages)});
+    	}
+    }
+    public String bondOfferingBuilderLabel {
+    	get {
+    		return String.format(Label.BondOfferingBuilder, new List<String>{bondOfferingLabel});
+    	}
+    }
+    public String bondOfferingDetailsLabel {
+    	get {
+    		return String.format(Label.BondOfferingDetails, new List<String>{bondOfferingLabel});
+    	}
+    }
+    public String bondOfferingProgressLabel {
+    	get {
+    		return String.format(Label.BondOfferingProgress, new List<String>{bondOfferingLabel});
+    	}
+    }
+    public String investorTypeFilterLabel {
+    	get {
+    		return String.format(Label.InvestorTypeFilter, new List<String>{investorLabel});
+    	}
+    }
+	public String subTitle {
+		get {
+			if (bondOffering.Id == null)
+				subtitle = String.format(Label.NewOfferingSubtitle, new List<String>{bondOfferingLabel});
+			else
+				subtitle = bondOffering.Name;
+			return subtitle;
+		}
+		private set;
+	}
+    
+    //Constructor
 	public BondOfferingPageControllerExtension(ApexPages.StandardController stdController) {
         controller = stdController;
         bondOffering = (Bond_Offering__c)stdController.getRecord();
@@ -120,7 +178,7 @@ public with sharing class BondOfferingPageControllerExtension {
 	public List<SelectOption> getInvestorTypeFilter()
 	{
 		List<SelectOption> options = new List<SelectOption>();
-		options.add(new SelectOption('--Any Type--', '--Any Type--'));
+		options.add(new SelectOption(Label.InvestorTypeFilterDefault, Label.InvestorTypeFilterDefault));
 		Schema.DescribeFieldResult investorTypeFieldDescribe = Investor__c.Type__c.getDescribe();
 		List<Schema.PicklistEntry> investorTypePicklistValues = investorTypeFieldDescribe.getPicklistValues();      
 		for( Schema.PicklistEntry investorTypePicklistValue : investorTypePicklistValues)
@@ -128,6 +186,13 @@ public with sharing class BondOfferingPageControllerExtension {
 			options.add(new SelectOption(investorTypePicklistValue.getLabel(), investorTypePicklistValue.getValue()));
 		}       
 		return options;
+	}
+	
+	private void setError(String error) {
+		ApexPages.Message myMsg = new ApexPages.Message(ApexPages.Severity.FATAL, error);
+        ApexPages.addMessage(myMsg);
+        errorShown = true;
+        selectedFilter = previousSelectedFilter;
 	}
 	
 	public Boolean allUnitsValid () {
@@ -142,8 +207,87 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 		
 		if (!allValid)
-			setError('Make sure you have entered a valid numbered in the units field for all investors. Investor causing the error: ' + errorCause);
+			setError(String.format(Label.InvalidUnitsMessage, new List<String>{investorPluralLabel, investorLabel, errorCause}));
 		return allValid;
+	}
+	
+	private void storeSelected() {
+		for (bondBuySelectionWrapper wrapDisplayed : bondBuyWrapsToDisplay) {
+			if (wrapDisplayed.hasChanged) {
+				wrappersChanged.put(wrapDisplayed.bondBuy.Investor__c, wrapDisplayed);
+			}
+			if (!wrapDisplayed.selected && wrapDisplayed.bondBuy.Status__c == Label.NewStatus && wrappersChanged.containsKey(wrapDisplayed.bondBuy.Investor__c))
+				wrappersChanged.remove(wrapDisplayed.bondBuy.Investor__c);
+		}
+	}
+	
+	private void updateStats() {
+		Integer unitsPendingChange = 0;
+		for (bondBuySelectionWrapper wrapperChanged : wrappersChanged.values()) {
+			if (wrapperChanged.selected)
+				if (wrapperChanged.bondBuy.Status__c == Label.NewStatus)
+					unitsPendingChange += Integer.valueOf(wrapperChanged.units);
+				else
+					unitsPendingChange += (Integer.valueOf(wrapperChanged.units) - Integer.valueOf(wrapperChanged.bondBuy.Units__c));
+			else
+				unitsPendingChange -= Integer.valueOf(wrapperChanged.bondBuy.Units__c);
+		}
+		unitsPending = unitsPendingOriginal + unitsPendingChange;
+	}
+	
+	public void processBondBuyWrappersToDisplay(List<Investor__c> tempInvestors) {
+		bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
+		bondBuySelectionWrapper tempWrapper;
+		pageNumber = investorSetController.getPageNumber();
+		for (Investor__c tempInvestor : tempInvestors) {
+			if (wrappersChanged.containsKey(tempInvestor.Id)) 
+				tempWrapper = wrappersChanged.get(tempInvestor.Id);
+			else {
+				if (tempInvestor.Bond_Buys__r == null || tempInvestor.Bond_Buys__r.isEmpty())
+					tempWrapper = new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = Label.NewStatus, Units__c = tempInvestor.Default_Bond_Units__c, Investor__r = tempInvestor, Investor__c = tempInvestor.Id), false, true);
+				else
+					tempWrapper = new bondBuySelectionWrapper(tempInvestor.Bond_Buys__r[0], true, false);
+			}
+			bondBuyWrapsToDisplay.add(tempWrapper);
+		}
+	}
+	
+	public void getBondBuySelectionWrapperList(Boolean isRollBack) {
+		List<Investor__c> tempInvestors = new List<Investor__c>();
+		String soqlQueryInvestors = 'Select Name, Type__c, Default_Bond_Units__c';
+		String whereClause = '';
+		if(bondOffering.Id != null)
+			soqlQueryInvestors += ', (Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buys__r where Bond_Offering__c = \'' + bondOffering.Id + '\' Limit 1)';
+		if (selectedFilter != Label.InvestorTypeFilterDefault && !String.isBlank(selectedFilter))
+			whereClause += 'where Type__c = :selectedFilter';
+		
+		soqlQueryInvestors += ' from Investor__c ' + whereClause + ' order by Name Asc limit ' + String.valueOf(queryLocatorLimit);
+
+		try {
+			investorSetController = new ApexPages.StandardSetController(Database.getQueryLocator(soqlQueryInvestors));
+			investorSetController.setPageSize(pageSize);
+			if (isRollBack)
+				investorSetController.setPageNumber(pageNumber);
+			else
+				investorSetController.first();
+			tempInvestors = investorSetController.getRecords();
+			bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
+			investorCount = investorSetController.getResultSize();
+			if (investorCount == queryLocatorLimit)
+				investorCountOver = Database.countQuery('Select count() from Investor__c ' + whereClause);
+			else
+				investorCountOver = investorCount;
+			processBondBuyWrappersToDisplay(tempInvestors);
+		}
+		catch (Exception ex) {
+			setError(String.format(Label.ErrorLoadingInvestors, new List<String>{investorLabel, ex.getMessage()}));
+		}
+	}
+	
+	private PageReference reloadList () {
+		if (allUnitsValid())
+			getBondBuySelectionWrapperList(false);
+		return null;
 	}
 	
 	public PageReference refreshBondBuys() {
@@ -151,6 +295,16 @@ public with sharing class BondOfferingPageControllerExtension {
 			storeSelected();
 			updateStats();
 			return reloadList();
+		}
+		return null;
+	}
+	
+	public PageReference firstPage() {
+		if (allUnitsValid()) {
+			storeSelected();
+			updateStats();
+			investorSetController.first();
+			processBondBuyWrappersToDisplay(investorSetController.getRecords());
 		}
 		return null;
 	}
@@ -185,134 +339,6 @@ public with sharing class BondOfferingPageControllerExtension {
 		return null;
 	}
 	
-	public PageReference firstPage() {
-		if (allUnitsValid()) {
-			storeSelected();
-			updateStats();
-			investorSetController.first();
-			processBondBuyWrappersToDisplay(investorSetController.getRecords());
-		}
-		return null;
-	}
-	
-	private void storeSelected() {
-		for (bondBuySelectionWrapper wrapDisplayed : bondBuyWrapsToDisplay) {
-			if (wrapDisplayed.hasChanged) {
-				wrappersChanged.put(wrapDisplayed.bondBuy.Investor__c, wrapDisplayed);
-			}
-			if (!wrapDisplayed.selected && wrapDisplayed.bondBuy.Status__c == 'New' && wrappersChanged.containsKey(wrapDisplayed.bondBuy.Investor__c))
-				wrappersChanged.remove(wrapDisplayed.bondBuy.Investor__c);
-		}
-	}
-	
-	private void updateStats() {
-		Integer unitsPendingChange = 0;
-		for (bondBuySelectionWrapper wrapperChanged : wrappersChanged.values()) {
-			if (wrapperChanged.selected)
-				if (wrapperChanged.bondBuy.Status__c == 'New')
-					unitsPendingChange += Integer.valueOf(wrapperChanged.units);
-				else
-					unitsPendingChange += (Integer.valueOf(wrapperChanged.units) - Integer.valueOf(wrapperChanged.bondBuy.Units__c));
-			else
-				unitsPendingChange -= Integer.valueOf(wrapperChanged.bondBuy.Units__c);
-		}
-		unitsPending = unitsPendingOriginal + unitsPendingChange;
-	}
-	
-	private PageReference reloadList () {
-		if (allUnitsValid())
-			getBondBuySelectionWrapperList(false);
-		return null;
-	}
-	
-	private void setError(String error) {
-		ApexPages.Message myMsg = new ApexPages.Message(ApexPages.Severity.FATAL, error);
-        ApexPages.addMessage(myMsg);
-        errorShown = true;
-        selectedFilter = previousSelectedFilter;
-	}
-	
-	public void processBondBuyWrappersToDisplay(List<Investor__c> tempInvestors) {
-		bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
-		bondBuySelectionWrapper tempWrapper;
-		pageNumber = investorSetController.getPageNumber();
-		for (Investor__c tempInvestor : tempInvestors) {
-			if (wrappersChanged.containsKey(tempInvestor.Id)) 
-				tempWrapper = wrappersChanged.get(tempInvestor.Id);
-			else {
-				if (tempInvestor.Bond_Buys__r == null || tempInvestor.Bond_Buys__r.isEmpty())
-					tempWrapper = new bondBuySelectionWrapper(new Bond_Buy__c(Status__c = 'New', Units__c = tempInvestor.Default_Bond_Units__c, Investor__r = tempInvestor, Investor__c = tempInvestor.Id), false, true);
-				else
-					tempWrapper = new bondBuySelectionWrapper(tempInvestor.Bond_Buys__r[0], true, false);
-			}
-			bondBuyWrapsToDisplay.add(tempWrapper);
-		}
-	}
-	
-	public void getBondBuySelectionWrapperList(Boolean isRollBack) {
-		List<Investor__c> tempInvestors = new List<Investor__c>();
-		String soqlQueryInvestors = 'Select Name, Type__c, Default_Bond_Units__c';
-		String whereClause = '';
-		if(bondOffering.Id != null)
-			soqlQueryInvestors += ', (Select Units__c, Status__c, Investor__r.Name, Investor__r.Type__c from Bond_Buys__r where Bond_Offering__c = \'' + bondOffering.Id + '\' Limit 1)';
-		if (selectedFilter != '--Any type--' && !String.isBlank(selectedFilter))
-			whereClause += 'where Type__c = :selectedFilter';
-		
-		soqlQueryInvestors += ' from Investor__c ' + whereClause + ' order by Name Asc limit ' + String.valueOf(queryLocatorLimit);
-
-		try {
-			investorSetController = new ApexPages.StandardSetController(Database.getQueryLocator(soqlQueryInvestors));
-			investorSetController.setPageSize(pageSize);
-			if (isRollBack)
-				investorSetController.setPageNumber(pageNumber);
-			else
-				investorSetController.first();
-			tempInvestors = investorSetController.getRecords();
-			bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
-			investorCount = investorSetController.getResultSize();
-			if (investorCount == queryLocatorLimit)
-				investorCountOver = Database.countQuery('Select count() from Investor__c ' + whereClause);
-			else
-				investorCountOver = investorCount;
-			processBondBuyWrappersToDisplay(tempInvestors);
-		}
-		catch (Exception ex) {
-			setError('There was an error loading the records, please contact your administrator.');
-		}
-	}
-	
-	public PageReference save() {
-		if (!allUnitsValid())
-	        return null;
-	    storeSelected();
-	    
-	    Savepoint sp = Database.setSavepoint();
-	    
-	    if (!isNewOffering)
-        	bondOffering = [Select Units_Pending__c, Units_Sold__c, Units_Remaining__c from Bond_Offering__c where Id = :bondOffering.Id];
-        else
-        	bondOffering.Client__c = ((Bond_Offering__c) controller.getRecord()).Client__c;
-	    bondOffering.Name = ((Bond_Offering__c) controller.getRecord()).Name;
-	    bondOffering.Interest_Rate__c = ((Bond_Offering__c) controller.getRecord()).Interest_Rate__c;
-	    bondOffering.Sales_Rep__c = ((Bond_Offering__c) controller.getRecord()).Sales_Rep__c;
-	    upsert bondOffering;
-		PageReference result = new PageReference('/' + bondOffering.Id);
-		Id newOfferId = bondOffering.Id;
-		Set<Id> relatedBondBuys = saveBondBuys(newOfferId);
-		if (errorShown || DMLerrors) {
-			Database.rollback(sp);
-			rollBackWrappers(relatedBondBuys);
-			if (isNewOffering) {
-				bondOffering = new Bond_Offering__c(Id = null, Name = bondOffering.Name, Client__c = bondOffering.Client__c, Interest_Rate__c = bondOffering.Interest_Rate__c, Sales_Rep__c = bondOffering.Sales_Rep__c);
-			}
-			controller = new ApexPages.Standardcontroller(bondOffering);
-			getBondBuySelectionWrapperList(true);	
-			updateStats();
-			return null;
-		}
-		return result;
-	}
-	
 	private Set<Id> saveBondBuys(Id newOfferId) {
 		List<bondBuySelectionWrapper> finalwrapperList = wrappersChanged.values();
 		List<Bond_Buy__c> bondBuyListToInsert = new List<Bond_Buy__c>();
@@ -321,8 +347,8 @@ public with sharing class BondOfferingPageControllerExtension {
 		Set<Id> relatedBondBuys = new Set<Id>();
 		for (bondBuySelectionWrapper wrapper : finalwrapperList) {
 			if (wrapper.toUpsert) {
-				if (wrapper.bondBuy.Status__c == 'New')
-					wrapper.bondBuy.Status__c = 'Pending';
+				if (wrapper.bondBuy.Status__c == Label.NewStatus)
+					wrapper.bondBuy.Status__c = Label.PendingStatus;
 				wrapper.bondBuy.Bond_Offering__c = newOfferId;
 				wrapper.bondBuy.Units__c = Double.valueOf(wrapper.units);
 				if (wrapper.bondBuy.Id != null) {
@@ -360,13 +386,45 @@ public with sharing class BondOfferingPageControllerExtension {
 		
 		return relatedBondBuys;
 	}
+
+	public PageReference save() {
+		if (!allUnitsValid())
+	        return null;
+	    storeSelected();
+	    
+	    if (!isNewOffering)
+        	bondOffering = [Select Units_Pending__c, Units_Sold__c, Units_Remaining__c from Bond_Offering__c where Id = :bondOffering.Id];
+        else
+        	bondOffering.Client__c = ((Bond_Offering__c) controller.getRecord()).Client__c;
+        	
+	    bondOffering.Name = ((Bond_Offering__c) controller.getRecord()).Name;
+	    bondOffering.Interest_Rate__c = ((Bond_Offering__c) controller.getRecord()).Interest_Rate__c;
+	    bondOffering.Sales_Rep__c = ((Bond_Offering__c) controller.getRecord()).Sales_Rep__c;
+        	
+	    Savepoint sp = Database.setSavepoint();
+	    System.debug(' ' + bondOffering.Name + ' ' + bondOffering.Interest_Rate__c + ' ' + bondOffering.Sales_Rep__c);
+	    upsert bondOffering;
+		PageReference result = new PageReference('/' + bondOffering.Id);
+		Id newOfferId = bondOffering.Id;
+		Set<Id> relatedBondBuys = saveBondBuys(newOfferId);
+		if (errorShown || DMLerrors) {
+			Database.rollback(sp);
+			rollBackWrappers(relatedBondBuys);
+			if (isNewOffering)
+				bondOffering = new Bond_Offering__c(Id = null, Name = bondOffering.Name, Client__c = bondOffering.Client__c, Interest_Rate__c = bondOffering.Interest_Rate__c, Sales_Rep__c = bondOffering.Sales_Rep__c);
+			getBondBuySelectionWrapperList(true);	
+			updateStats();
+			return null;
+		}
+		return result;
+	}
 	
 	private void rollBackWrappers(Set<Id> relatedBondBuys) {
 		Bond_Buy__c tempBondBuy;
 		Map<Id, Bond_Buy__c> bondBuysMap = new Map<Id, Bond_Buy__c>([Select Units__c from Bond_Buy__c where Id in :relatedBondBuys]);
 		for (bondBuySelectionWrapper wrapper : wrappersChanged.values()) {
 			if (wrapper.bondBuy.Id == null || wrapper.isNew) {
-				tempBondBuy = new Bond_Buy__c(Status__c = 'New', Units__c = Double.valueOf(wrapper.units), Investor__r = wrapper.bondBuy.Investor__r, Investor__c = wrapper.bondBuy.Investor__c);
+				tempBondBuy = new Bond_Buy__c(Status__c = Label.NewStatus, Units__c = Double.valueOf(wrapper.units), Investor__r = wrapper.bondBuy.Investor__r, Investor__c = wrapper.bondBuy.Investor__c);
 				wrapper.bondBuy = tempBondBuy;
 			}
 			else {
@@ -396,34 +454,31 @@ public with sharing class BondOfferingPageControllerExtension {
 		public Boolean readOnly {
 			get {
 				if (bondBuy != null)
-					readOnly = bondBuy.Status__c != 'Pending' && bondBuy.Status__c != 'New';
+					readOnly = bondBuy.Status__c != Label.PendingStatus && bondBuy.Status__c != Label.NewStatus;
 				return readOnly;
 			}
 			private set;
 		}
-		
 		public Boolean toUpsert {
 			get {
-				if (bondBuy.Status__c == 'Pending' && selected) 
+				if (bondBuy.Status__c == Label.PendingStatus && selected) 
 					return Integer.valueOf(units) != bondBuy.Units__c;
 				return selected && !readOnly;
 			}
 		}
-		
 		public Boolean toDelete {
 			get {
-				return !selected && bondBuy.Status__c != 'New';
+				return !selected && bondBuy.Status__c != Label.NewStatus;
 			}
 		}
-		
 		public Boolean hasChanged {
 			get {
 				return toUpsert || toDelete;
 			}
 		}
-		
 		public Boolean isNew {get;set;}
 		
+		//Constructor
 		public bondBuySelectionWrapper (Bond_Buy__c bondBuyIn, Boolean selectedIn, Boolean isNewIn) {
 			bondBuy = bondBuyIn;
 			selected = selectedIn;

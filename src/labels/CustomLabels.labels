@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>BondOfferingBuilder</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>BondOfferingBuilder</shortDescription>
+        <value>{0} Builder</value>
+    </labels>
+    <labels>
+        <fullName>BondOfferingDetails</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>BondOfferingDetails</shortDescription>
+        <value>{0} Details</value>
+    </labels>
+    <labels>
+        <fullName>BondOfferingProgress</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>BondOfferingProgress</shortDescription>
+        <value>{0} Progress</value>
+    </labels>
+    <labels>
+        <fullName>DisplayingRecordsMessage</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>DisplayingRecordsMessage</shortDescription>
+        <value>Displaying {0} record(s) from a total of {1}.</value>
+    </labels>
+    <labels>
+        <fullName>ErrorEncounteredMessage</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>ErrorEncounteredMessage</shortDescription>
+        <value>Errors encountered updating {0}: {1}</value>
+    </labels>
+    <labels>
+        <fullName>ErrorLoadingInvestors</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>ErrorLoadingInvestors</shortDescription>
+        <value>There was an unexpected error loading the {0} records, please contact your administrator and provide them this message: {1}</value>
+    </labels>
+    <labels>
+        <fullName>ErrorTitle</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>ErrorTitle</shortDescription>
+        <value>Error:</value>
+    </labels>
+    <labels>
+        <fullName>IndividualError</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>IndividualError</shortDescription>
+        <value>An unexpected error occurred, please check that the data you&apos;re inserting is correct and try again.
+If the error persists, please contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>InvalidIdIntroduced</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>InvalidIdIntroduced</shortDescription>
+        <value>The Id introduced for the related {0} is invalid. Please check that the {0} exists correctly.
+If the error persists, please contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>InvalidUnitsMessage</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>InvalidUnitsMessage</shortDescription>
+        <value>Make sure you have entered a valid number in the units field for all {0}. {1} causing the error: {2}</value>
+    </labels>
+    <labels>
+        <fullName>InvestorTypeFilter</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>InvestorTypeFilter</shortDescription>
+        <value>{0} Type Filter</value>
+    </labels>
+    <labels>
+        <fullName>InvestorTypeFilterDefault</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>InvestorTypeFilterDefault</shortDescription>
+        <value>--Any Type--</value>
+    </labels>
+    <labels>
+        <fullName>NewOfferingSubtitle</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>NewOfferingSubtitle</shortDescription>
+        <value>New {0}</value>
+    </labels>
+    <labels>
+        <fullName>NewStatus</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>NewStatus</shortDescription>
+        <value>New</value>
+    </labels>
+    <labels>
+        <fullName>NotCustomValidationError</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>NotCustomValidationError</shortDescription>
+        <value>There was an error updating the {0} associated with this {1}, please check that the data introduced is correct and that the {0} exists. If the problem persists, please contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>PassedStatus</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PassedStatus</shortDescription>
+        <value>Passed</value>
+    </labels>
+    <labels>
+        <fullName>PendingStatus</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PendingStatus</shortDescription>
+        <value>Pending</value>
+    </labels>
+    <labels>
+        <fullName>PurchasedStatus</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PurchasedStatus</shortDescription>
+        <value>Purchased</value>
+    </labels>
+    <labels>
+        <fullName>SelectHeader</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>SelectHeader</shortDescription>
+        <value>Select</value>
+    </labels>
+    <labels>
+        <fullName>TooManyInvestorsWarning</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>TooManyInvestorsWarning</shortDescription>
+        <value>There are {0} {1} in the database, these page only gets the first {2} ordered by Name</value>
+    </labels>
+    <labels>
+        <fullName>TooManyPendingUnits</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>TooManyPendingUnits</shortDescription>
+        <value>Too many pending units, they can&apos;t be greater than two times the remaining units.</value>
+    </labels>
+    <labels>
+        <fullName>UpdateGeneralError</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>UpdateGeneralError</shortDescription>
+        <value>An unexpected error occurred while trying to update the {0} and/or {1} associated with this {2}. Please check that the data introduced is correct.
+If the error persists, please contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>WarningTitle</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>WarningTitle</shortDescription>
+        <value>Warning:</value>
+    </labels>
+    <labels>
+        <fullName>WorkingMessage</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>WorkingMessage</shortDescription>
+        <value>Working...</value>
+    </labels>
+    <labels>
+        <fullName>goToFirst</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>goToFirst</shortDescription>
+        <value>I&lt; First</value>
+    </labels>
+    <labels>
+        <fullName>goToLast</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>goToLast</shortDescription>
+        <value>Last &gt;I</value>
+    </labels>
+    <labels>
+        <fullName>goToNext</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>goToNext</shortDescription>
+        <value>Next &gt;</value>
+    </labels>
+    <labels>
+        <fullName>goToPrevious</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>goToPrevious</shortDescription>
+        <value>&lt; Previous</value>
+    </labels>
+    <labels>
+        <fullName>pageNumberOfTotal</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>pageNumberOfTotal</shortDescription>
+        <value>Page {0} of {1}</value>
+    </labels>
+</CustomLabels>

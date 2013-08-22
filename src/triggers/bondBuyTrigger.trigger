@@ -1,8 +1,8 @@
-trigger bondBuyTrigger on Bond_Buy__c (after delete, after insert, after undelete, after update) {
+trigger bondBuyTrigger on Bond_Buy__c (before insert, after insert, before update, after update, after delete, after undelete) {
 
 	//Create the Handler instance passing the proper parameters
 	bondBuyTriggerHandler handler = new bondBuyTriggerHandler(Trigger.isExecuting, Trigger.size);
-
+		
 	if (Trigger.isAfter) {	
 		if (Trigger.isInsert) {
 			handler.bondBuyAfterInsertUndelete(Trigger.new, Trigger.newMap);
@@ -20,4 +20,14 @@ trigger bondBuyTrigger on Bond_Buy__c (after delete, after insert, after undelet
 			handler.bondBuyAfterInsertUndelete(Trigger.new, Trigger.newMap);
 		}
 	}
+	else {
+		if (Trigger.isInsert) {
+			handler.bondBuyBeforeInsert(Trigger.new);
+		}
+		
+		if (Trigger.isUpdate) {
+			handler.bondBuyBeforeUpdate(Trigger.new);
+		}
+	}
+		
 }
