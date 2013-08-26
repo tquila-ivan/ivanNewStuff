@@ -195,7 +195,7 @@ public with sharing class BondOfferingPageControllerExtension {
         selectedFilter = previousSelectedFilter;
 	}
 	
-	public Boolean allUnitsValid () {
+	private Boolean allUnitsValid () {
 		Boolean allValid = true;
 		String errorCause = '';
 		for (bondBuySelectionWrapper wrap : bondBuyWrapsToDisplay) {
@@ -235,7 +235,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		unitsPending = unitsPendingOriginal + unitsPendingChange;
 	}
 	
-	public void processBondBuyWrappersToDisplay(List<Investor__c> tempInvestors) {
+	private void processBondBuyWrappersToDisplay(List<Investor__c> tempInvestors) {
 		bondBuyWrapsToDisplay = new List<bondBuySelectionWrapper>();
 		bondBuySelectionWrapper tempWrapper;
 		pageNumber = investorSetController.getPageNumber();
@@ -252,7 +252,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 	}
 	
-	public void getBondBuySelectionWrapperList(Boolean isRollBack) {
+	private void getBondBuySelectionWrapperList(Boolean isRollBack) {
 		List<Investor__c> tempInvestors = new List<Investor__c>();
 		String soqlQueryInvestors = 'Select Name, Type__c, Default_Bond_Units__c';
 		String whereClause = '';
@@ -378,7 +378,7 @@ public with sharing class BondOfferingPageControllerExtension {
 		}
 		
 		try {
-			insert bondBuyListToInsert ;
+			insert bondBuyListToInsert;
 		}
 		catch (Exception ex) {
 			errorShown = true;
@@ -402,7 +402,7 @@ public with sharing class BondOfferingPageControllerExtension {
 	    bondOffering.Sales_Rep__c = ((Bond_Offering__c) controller.getRecord()).Sales_Rep__c;
         	
 	    Savepoint sp = Database.setSavepoint();
-	    System.debug(' ' + bondOffering.Name + ' ' + bondOffering.Interest_Rate__c + ' ' + bondOffering.Sales_Rep__c);
+
 	    upsert bondOffering;
 		PageReference result = new PageReference('/' + bondOffering.Id);
 		Id newOfferId = bondOffering.Id;

@@ -444,11 +444,12 @@ public with sharing class bondBuyTriggerHandler {
 				errorMessage = '';
 				if (wrongObjectsErrorMap.containsKey(bb.Bond_Offering__c))
 					errorMessage = String.format(Label.ErrorEncounteredMessage, new List<String>{bondOfferingLabel,wrongObjectsErrorMap.get(bb.Bond_Offering__c)});
-				if (wrongObjectsErrorMap.containsKey(bb.Investor__c))
+				if (wrongObjectsErrorMap.containsKey(bb.Investor__c)) {
 					if (errorMessage != '')
 						errorMessage += ' --- ' + String.format(Label.ErrorEncounteredMessage, new List<String>{investorLabel, wrongObjectsErrorMap.get(bb.Investor__c)});
 					else
 						errorMessage = String.format(Label.ErrorEncounteredMessage, new List<String>{investorLabel, wrongObjectsErrorMap.get(bb.Investor__c)});
+				}
 				if (errorMessage != '') {
 					bb.addError(errorMessage);
 					BondOfferingPageControllerExtension.DMLerrors = true;
@@ -492,14 +493,22 @@ public with sharing class bondBuyTriggerHandler {
     	
     	Map<Id, Bond_Offering__c> validOfferingsMap = new Map<Id, Bond_Offering__c>([Select Id from Bond_Offering__c where Id in :offeringIds]);
     	Map<Id, Investor__c> validInvestorsMap = new Map<Id, Investor__c>([Select Id from Investor__c where Id in :investorIds]);
-    	
+    	String errorMessage = '';
     	for (Bond_Buy__c bondBuy : bondBuyListIn) {
+    		errorMessage = '';
     		if(bondBuy.Bond_Offering__c != null)
 	    		if (!validOfferingsMap.containsKey(bondBuy.Bond_Offering__c))
-	    			bondBuy.addError(String.format(Label.InvalidIdIntroduced, new List<String>{bondOfferingLabel}));
+	    			errorMessage = String.format(Label.InvalidIdIntroduced, new List<String>{bondOfferingLabel});
 	    	if(bondBuy.Investor__c != null)
-	    		if (!validInvestorsMap.containsKey(bondBuy.Investor__c))
-	    			bondBuy.addError(String.format(Label.InvalidIdIntroduced, new List<String>{investorLabel}));
+	    		if (!validInvestorsMap.containsKey(bondBuy.Investor__c)) {
+	    			if (errorMessage == '')
+	    				errorMessage = String.format(Label.InvalidIdIntroduced, new List<String>{investorLabel});
+	    			else
+	    				errorMessage += '. ' + String.format(Label.InvalidIdIntroduced, new List<String>{investorLabel});
+	    		}
+	    	
+	    	if (!String.isBlank(errorMessage))
+	    		bondBuy.addError(errorMessage);
     	}
     }
 }
