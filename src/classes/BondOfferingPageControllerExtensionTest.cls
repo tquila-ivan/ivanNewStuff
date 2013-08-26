@@ -325,7 +325,7 @@ private class BondOfferingPageControllerExtensionTest {
 			controller.firstPage();
 		Test.stopTest();
 
-		System.assert(!ApexPages.hasMessages());
+		System.assert(ApexPages.hasMessages());
 		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
 		System.assertEquals(controller.pageNumber,1);
     }
@@ -418,7 +418,7 @@ private class BondOfferingPageControllerExtensionTest {
 			controller.previousPage();
 		Test.stopTest();
 
-		System.assert(!ApexPages.hasMessages());
+		System.assert(ApexPages.hasMessages());
 		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
 		System.assertEquals(controller.pageNumber,1);
     }
@@ -508,7 +508,7 @@ private class BondOfferingPageControllerExtensionTest {
 			controller.nextPage();
 		Test.stopTest();
 
-		System.assert(!ApexPages.hasMessages());
+		System.assert(ApexPages.hasMessages());
 		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
 		System.assertEquals(controller.pageNumber,1);
     }
@@ -598,7 +598,7 @@ private class BondOfferingPageControllerExtensionTest {
 			controller.lastPage();
 		Test.stopTest();
 
-		System.assert(!ApexPages.hasMessages());
+		System.assert(ApexPages.hasMessages());
 		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
 		System.assertEquals(controller.pageNumber,1);
     }
