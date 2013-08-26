@@ -281,6 +281,55 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assertEquals(controller.pageNumber,1);
     }
     
+    static testMethod void testFirstPageUnitsError() {
+    	
+    	PageReference pageRef = Page.BondOfferingPage;
+        Test.setCurrentPage(pageRef);
+        
+    	Integer bondBuyCount = [Select count() from Bond_Buy__c];
+		System.assertEquals(bondBuyCount,0);
+
+		User testSalesRep = generateTestData.getTestUser(salesRepProfile);
+		insert testSalesRep;
+		System.assertNotEquals(testSalesRep.Id, null);
+
+		Client__c client = generateTestData.getClient();
+		insert client;
+		System.assertNotEquals(client.Id, null);
+
+		Bond_Offering__c bondOffering = generateTestData.getBondOffering(client.Id, interestRate, testSalesRep.Id);
+		insert bondOffering;
+		System.assertNotEquals(bondOffering.Id, null);
+		
+		Map<String, Object> parameters = new Map<String, Object>();
+		parameters.put('investorType', university);
+		List<Investor__c> investorList = generateTestData.getMultipleObjects(parameters, Investor__c.getSObjectType(), maxToCreate);
+		insert investorList;
+		Integer investorCount = [Select count() from Investor__c];
+		System.assertEquals(investorCount, maxToCreate);
+		
+		ApexPages.StandardController stdCtrlr = new ApexPages.StandardController(bondOffering);
+		BondOfferingPageControllerExtension controller = new BondOfferingPageControllerExtension(stdCtrlr);
+		
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+
+		Integer i = 0;
+		for (BondOfferingPageControllerExtension.bondBuySelectionWrapper wrapper : controller.bondBuyWrapsToDisplay) {
+			if (i < controller.pageSize / 2)
+				wrapper.units = '';
+			else
+				wrapper.units = 'NaN';
+		}
+		
+		Test.startTest();
+			controller.firstPage();
+		Test.stopTest();
+
+		System.assert(!ApexPages.hasMessages());
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+		System.assertEquals(controller.pageNumber,1);
+    }
+    
     static testMethod void testPreviousPage() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
@@ -316,6 +365,55 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
 		System.assertEquals(controller.pageNumber,2);
 
+		Test.startTest();
+			controller.previousPage();
+		Test.stopTest();
+
+		System.assert(!ApexPages.hasMessages());
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+		System.assertEquals(controller.pageNumber,1);
+    }
+    
+    static testMethod void testPreviousPageUnitsError() {
+    	
+    	PageReference pageRef = Page.BondOfferingPage;
+        Test.setCurrentPage(pageRef);
+        
+    	Integer bondBuyCount = [Select count() from Bond_Buy__c];
+		System.assertEquals(bondBuyCount,0);
+
+		User testSalesRep = generateTestData.getTestUser(salesRepProfile);
+		insert testSalesRep;
+		System.assertNotEquals(testSalesRep.Id, null);
+
+		Client__c client = generateTestData.getClient();
+		insert client;
+		System.assertNotEquals(client.Id, null);
+
+		Bond_Offering__c bondOffering = generateTestData.getBondOffering(client.Id, interestRate, testSalesRep.Id);
+		insert bondOffering;
+		System.assertNotEquals(bondOffering.Id, null);
+		
+		Map<String, Object> parameters = new Map<String, Object>();
+		parameters.put('investorType', university);
+		List<Investor__c> investorList = generateTestData.getMultipleObjects(parameters, Investor__c.getSObjectType(), maxToCreate);
+		insert investorList;
+		Integer investorCount = [Select count() from Investor__c];
+		System.assertEquals(investorCount, maxToCreate);
+		
+		ApexPages.StandardController stdCtrlr = new ApexPages.StandardController(bondOffering);
+		BondOfferingPageControllerExtension controller = new BondOfferingPageControllerExtension(stdCtrlr);
+		
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+
+		Integer i = 0;
+		for (BondOfferingPageControllerExtension.bondBuySelectionWrapper wrapper : controller.bondBuyWrapsToDisplay) {
+			if (i < controller.pageSize / 2)
+				wrapper.units = '';
+			else
+				wrapper.units = 'NaN';
+		}
+		
 		Test.startTest();
 			controller.previousPage();
 		Test.stopTest();
@@ -366,6 +464,55 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assertEquals(controller.pageNumber,2);
     }
     
+    static testMethod void testNextPageUnitsError() {
+    	
+    	PageReference pageRef = Page.BondOfferingPage;
+        Test.setCurrentPage(pageRef);
+        
+    	Integer bondBuyCount = [Select count() from Bond_Buy__c];
+		System.assertEquals(bondBuyCount,0);
+
+		User testSalesRep = generateTestData.getTestUser(salesRepProfile);
+		insert testSalesRep;
+		System.assertNotEquals(testSalesRep.Id, null);
+
+		Client__c client = generateTestData.getClient();
+		insert client;
+		System.assertNotEquals(client.Id, null);
+
+		Bond_Offering__c bondOffering = generateTestData.getBondOffering(client.Id, interestRate, testSalesRep.Id);
+		insert bondOffering;
+		System.assertNotEquals(bondOffering.Id, null);
+		
+		Map<String, Object> parameters = new Map<String, Object>();
+		parameters.put('investorType', university);
+		List<Investor__c> investorList = generateTestData.getMultipleObjects(parameters, Investor__c.getSObjectType(), maxToCreate);
+		insert investorList;
+		Integer investorCount = [Select count() from Investor__c];
+		System.assertEquals(investorCount, maxToCreate);
+		
+		ApexPages.StandardController stdCtrlr = new ApexPages.StandardController(bondOffering);
+		BondOfferingPageControllerExtension controller = new BondOfferingPageControllerExtension(stdCtrlr);
+		
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+
+		Integer i = 0;
+		for (BondOfferingPageControllerExtension.bondBuySelectionWrapper wrapper : controller.bondBuyWrapsToDisplay) {
+			if (i < controller.pageSize / 2)
+				wrapper.units = '';
+			else
+				wrapper.units = 'NaN';
+		}
+		
+		Test.startTest();
+			controller.nextPage();
+		Test.stopTest();
+
+		System.assert(!ApexPages.hasMessages());
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+		System.assertEquals(controller.pageNumber,1);
+    }
+    
     static testMethod void testLastPage() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
@@ -407,7 +554,56 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assertEquals(controller.pageNumber,controller.totalPages);
     }
     
-    static testMethod void testSaveExistingCorrect() {
+    static testMethod void testLastPageUnitsError() {
+    	
+    	PageReference pageRef = Page.BondOfferingPage;
+        Test.setCurrentPage(pageRef);
+        
+    	Integer bondBuyCount = [Select count() from Bond_Buy__c];
+		System.assertEquals(bondBuyCount,0);
+
+		User testSalesRep = generateTestData.getTestUser(salesRepProfile);
+		insert testSalesRep;
+		System.assertNotEquals(testSalesRep.Id, null);
+
+		Client__c client = generateTestData.getClient();
+		insert client;
+		System.assertNotEquals(client.Id, null);
+
+		Bond_Offering__c bondOffering = generateTestData.getBondOffering(client.Id, interestRate, testSalesRep.Id);
+		insert bondOffering;
+		System.assertNotEquals(bondOffering.Id, null);
+		
+		Map<String, Object> parameters = new Map<String, Object>();
+		parameters.put('investorType', university);
+		List<Investor__c> investorList = generateTestData.getMultipleObjects(parameters, Investor__c.getSObjectType(), maxToCreate);
+		insert investorList;
+		Integer investorCount = [Select count() from Investor__c];
+		System.assertEquals(investorCount, maxToCreate);
+		
+		ApexPages.StandardController stdCtrlr = new ApexPages.StandardController(bondOffering);
+		BondOfferingPageControllerExtension controller = new BondOfferingPageControllerExtension(stdCtrlr);
+		
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+
+		Integer i = 0;
+		for (BondOfferingPageControllerExtension.bondBuySelectionWrapper wrapper : controller.bondBuyWrapsToDisplay) {
+			if (i < controller.pageSize / 2)
+				wrapper.units = '';
+			else
+				wrapper.units = 'NaN';
+		}
+		
+		Test.startTest();
+			controller.lastPage();
+		Test.stopTest();
+
+		System.assert(!ApexPages.hasMessages());
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+		System.assertEquals(controller.pageNumber,1);
+    }
+    
+    static testMethod void testSaveExistingOfferingCorrect() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
         Test.setCurrentPage(pageRef);
@@ -463,7 +659,7 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assert(!ApexPages.hasMessages());
     }
     
-    static testMethod void testSaveNewCorrect() {
+    static testMethod void testSaveNewOfferingCorrect() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
         Test.setCurrentPage(pageRef);
@@ -522,7 +718,7 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assert(!ApexPages.hasMessages());
     }
     
-    static testMethod void testSaveTooManyPending() {
+    static testMethod void testSaveTooManyPendingExistingOffering() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
         Test.setCurrentPage(pageRef);
@@ -577,7 +773,7 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assert(ApexPages.hasMessages());
     }
     
-    static testMethod void testSaveUnitsError() {
+    static testMethod void testSaveUnitsErrorExistingOffering() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
         Test.setCurrentPage(pageRef);
@@ -631,7 +827,7 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assert(ApexPages.hasMessages());
     }
     
-    static testMethod void testSaveUpdateErrorTooManyPending() {
+    static testMethod void testSaveUpdateErrorTooManyPendingNewOffering() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
         Test.setCurrentPage(pageRef);
@@ -692,7 +888,7 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assert(ApexPages.hasMessages());
     }
     
-    static testMethod void testSaveUpdateUnitsCorrect() {
+    static testMethod void testSaveUpdateUnitsCorrectExistingOffering() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
         Test.setCurrentPage(pageRef);
@@ -755,7 +951,7 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assert(!ApexPages.hasMessages());
     }
     
-    static testMethod void testSaveUpdateRemoveBondBuys() {
+    static testMethod void testSaveUpdateRemoveBondBuysExistingOffering() {
     	
     	PageReference pageRef = Page.BondOfferingPage;
         Test.setCurrentPage(pageRef);
