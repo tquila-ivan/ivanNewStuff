@@ -692,6 +692,69 @@ private class BondOfferingPageControllerExtensionTest {
 		System.assert(ApexPages.hasMessages());
     }
     
+    static testMethod void testSaveUpdateUnitsCorrect() {
+    	
+    	PageReference pageRef = Page.BondOfferingPage;
+        Test.setCurrentPage(pageRef);
+        
+    	Integer bondBuyCount = [Select count() from Bond_Buy__c];
+		System.assertEquals(bondBuyCount,0);
+
+		User testSalesRep = generateTestData.getTestUser(salesRepProfile);
+		insert testSalesRep;
+		System.assertNotEquals(testSalesRep.Id, null);
+
+		Client__c client = generateTestData.getClient();
+		insert client;
+		System.assertNotEquals(client.Id, null);
+
+		Bond_Offering__c bondOffering = generateTestData.getBondOffering(client.Id, interestRate, testSalesRep.Id);
+		insert bondOffering;
+		System.assertNotEquals(bondOffering.Id, null);
+		
+		Map<String, Object> parameters = new Map<String, Object>();
+		parameters.put('investorType', university);
+		List<Investor__c> investorList = generateTestData.getMultipleObjects(parameters, Investor__c.getSObjectType(), controllerPageSize);
+		insert investorList;
+		Integer investorCount = [Select count() from Investor__c];
+		System.assertEquals(investorCount, controllerPageSize);
+		
+		List<Bond_Buy__c> bondBuys = new List<Bond_Buy__c>();
+		
+		for (Investor__c investor : investorList) {
+			bondBuys.add(generateTestData.getBondBuy(bondOffering.Id, investor.Id, Label.PendingStatus, unitsForPending));
+		}
+		insert bondBuys;
+		System.assertEquals([Select count() from Bond_Buy__c], controllerPageSize);
+		
+		ApexPages.StandardController stdCtrlr = new ApexPages.StandardController(bondOffering);
+		BondOfferingPageControllerExtension controller = new BondOfferingPageControllerExtension(stdCtrlr);
+		
+		System.assertEquals(controller.bondBuyWrapsToDisplay.size(),controller.pageSize);
+		
+		Set<Id> investorIds = new Set<Id>();
+		String unitsChange = '5';
+		for (BondOfferingPageControllerExtension.bondBuySelectionWrapper wrapper : controller.bondBuyWrapsToDisplay) {
+			wrapper.units = unitsChange;
+			investorIds.add(wrapper.bondBuy.Investor__c);
+		}
+
+		Test.startTest();
+			controller.nextPage();
+			controller.save();
+		Test.stopTest();
+		
+		investorList = [Select Bonds_Pitched__c from Investor__c where Id in :investorIds];
+		
+		for (Investor__c investor : investorList) {
+			System.assertEquals(Integer.valueOf(investor.Bonds_Pitched__c), 1);
+		}
+
+		bondOffering = [Select Units_Pending__c from Bond_Offering__c where Id = :bondOffering.Id];
+		System.assertEquals(Integer.valueOf(bondOffering.Units_Pending__c), Integer.valueOf(unitsChange)*controllerPageSize);
+		System.assert(!ApexPages.hasMessages());
+    }
+    
     static testMethod void testSaveUpdateRemoveBondBuys() {
     	
     	PageReference pageRef = Page.BondOfferingPage;

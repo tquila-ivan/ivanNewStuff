@@ -224,11 +224,12 @@ public with sharing class BondOfferingPageControllerExtension {
 	private void updateStats() {
 		Integer unitsPendingChange = 0;
 		for (bondBuySelectionWrapper wrapperChanged : wrappersChanged.values()) {
-			if (wrapperChanged.selected)
+			if (wrapperChanged.selected) {
 				if (wrapperChanged.bondBuy.Status__c == Label.NewStatus)
 					unitsPendingChange += Integer.valueOf(wrapperChanged.units);
 				else
 					unitsPendingChange += (Integer.valueOf(wrapperChanged.units) - Integer.valueOf(wrapperChanged.bondBuy.Units__c));
+			}
 			else
 				unitsPendingChange -= Integer.valueOf(wrapperChanged.bondBuy.Units__c);
 		}
