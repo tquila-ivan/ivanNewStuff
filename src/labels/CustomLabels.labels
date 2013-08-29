@@ -62,7 +62,7 @@ If the error persists, please contact your administrator.</value>
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>InvalidIdIntroduced</shortDescription>
-        <value>The Id introduced for the related {0} is invalid. Please check that the {0} exists correctly.
+        <value>The Id introduced for the related {0} is invalid. Please check that the {0} exists correctly and you have proper access to it.
 If the error persists, please contact your administrator.</value>
     </labels>
     <labels>
@@ -148,6 +148,13 @@ If the error persists, please contact your administrator.</value>
         <protected>false</protected>
         <shortDescription>TooManyPendingUnits</shortDescription>
         <value>Too many pending units, they can&apos;t be greater than two times the remaining units.</value>
+    </labels>
+    <labels>
+        <fullName>UnexpectedErrorMessage</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>UnexpectedErrorMessage</shortDescription>
+        <value>An unexpected error has occurred, please make sure you have permission to make the changes you&apos;re requesting. If the problem persists, please contact your administrator.</value>
     </labels>
     <labels>
         <fullName>UpdateGeneralError</fullName>
