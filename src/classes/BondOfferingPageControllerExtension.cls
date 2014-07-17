@@ -293,13 +293,11 @@ public with sharing class BondOfferingPageControllerExtension {
 	 * Method that prepares the Standard set controller with the selected filter. It sets the standard controller for the 
 	 * Investor__c object, to get the proper pagination functionalities.
 	 * 
-	 * This assumes that there aren't more than 10000 investors for any given filter, as it's stated in the requirements for data volumes.
-	 * In case of having more than 10000 investors in the system for the filter, the page will display a warning and work with the first
+	 * This assumes that there aren't more than 10000 investors, as it's stated in the requirements for data volumes.
+	 * In case of having more than 10000 investors in the system, the page will display a warning and work with the first
 	 * 10000. This limit is enforced by the Database.QueryLocator, that takes up to 10000 records (outside of batch classes).
-	 * Normally, this will happen for the '--Any Type--' filter, in case there's more than 10000 records. But when you move through the filters
-	 * you'll be able to get them all (as long as there aren't more than 10000 investors of every type).
 	 * 
-	 * This method is developed in a way that if this limit is changed, the page will function up to the enforced limit, getting it
+	 * This method is developed in a way that if this limit is changed, the page will function up to the enforce limit, getting it
 	 * dynamically with the Limist class.
 	 */
 	private void getBondBuySelectionWrapperList(Boolean isRollBack) {

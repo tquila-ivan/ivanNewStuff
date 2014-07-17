@@ -140,7 +140,7 @@ If the error persists, please contact your administrator.</value>
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>TooManyInvestorsWarning</shortDescription>
-        <value>There are {0} {1} in the database for this selection, this page only gets the first {2} ordered by Name for any filter option. Try changing the filter to narrow the search results.</value>
+        <value>There are {0} {1} in the database, these page only gets the first {2} ordered by Name</value>
     </labels>
     <labels>
         <fullName>TooManyPendingUnits</fullName>
