@@ -1,5 +1,5 @@
 /**
- * Controller class that handles the behaviour of the page BondOfferingPage. Testingggg
+ * Controller class that handles the behaviour of the page BondOfferingPage
  */
 public with sharing class BondOfferingPageControllerExtension {
 	
